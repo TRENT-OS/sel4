@@ -27,6 +27,8 @@
 #define UART_FLOW_DELAY              0x38
 #define UART_TX_FIFO_TRIGGER_LEVEL   0x44
 
+#define UART_CHANNEL_STS_RXEMPTY     BIT(1)
+
 #define UART_INTRPT_MASK_TXEMPTY     BIT(3)
 #define UART_CHANNEL_STS_TXEMPTY     BIT(3)
 
@@ -43,7 +45,7 @@ void uart_drv_putchar(unsigned char c)
 #ifdef CONFIG_DEBUG_BUILD
 unsigned char uart_drv_getchar(void)
 {
-    while (!(*UART_REG(UART_CHANNEL_STS) & BIT(UART_CHANNEL_STS_TXEMPTY)));
+    while (*UART_REG(UART_CHANNEL_STS) & UART_CHANNEL_STS_RXEMPTY);
     return *UART_REG(UART_TX_RX_FIFO);
 }
 #endif /* CONFIG_DEBUG_BUILD */
