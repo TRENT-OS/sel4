@@ -38,7 +38,7 @@
 /* This represents the physical address that the kernel image will be linked to. This needs to
  * be on a 1gb boundary as we currently require being able to creating a mapping to this address
  * as the largest frame size */
-#define PADDR_LOAD 0xC0000000lu
+#define PADDR_LOAD 0x01200000lu
 #endif
 
 /* The highest valid physical address that can be indexed in the kernel window */
@@ -59,50 +59,50 @@
 
 #ifndef __ASSEMBLER__
 
-int get_num_avail_p_regs(void);
-p_region_t get_avail_p_reg(unsigned int i);
-bool_t add_avail_p_reg(p_region_t reg);
-void map_kernel_devices(void);
+int get_num_avail_p_regs ( void );
+p_region_t get_avail_p_reg ( unsigned int i );
+bool_t add_avail_p_reg ( p_region_t reg );
+void map_kernel_devices ( void );
 
-bool_t CONST isReservedIRQ(irq_t irq);
-void handleReservedIRQ(irq_t irq);
-void ackInterrupt(irq_t irq);
-bool_t isIRQPending(void);
+bool_t CONST isReservedIRQ ( irq_t irq );
+void handleReservedIRQ ( irq_t irq );
+void ackInterrupt ( irq_t irq );
+bool_t isIRQPending ( void );
 /** MODIFIES: [*] */
-void maskInterrupt(bool_t enable, irq_t irq);
+void maskInterrupt ( bool_t enable, irq_t irq );
 /** MODIFIES: */
-irq_t getActiveIRQ(void);
+irq_t getActiveIRQ ( void );
 /** MODIFIES: [*] */
-static inline void setInterruptMode(irq_t irq, bool_t levelTrigger, bool_t polarityLow) { }
+static inline void setInterruptMode ( irq_t irq, bool_t levelTrigger, bool_t polarityLow ) { }
 /** MODIFIES: [*] */
-void initTimer(void);
+void initTimer ( void );
 /* L2 cache control */
 /** MODIFIES: [*] */
-void initL2Cache(void);
+void initL2Cache ( void );
 
-void initIRQController(void);
+void initIRQController ( void );
 
-void handleSpuriousIRQ(void);
+void handleSpuriousIRQ ( void );
 
-void plat_cleanL2Range(paddr_t start, paddr_t end);
+void plat_cleanL2Range ( paddr_t start, paddr_t end );
 
-void plat_invalidateL2Range(paddr_t start, paddr_t end);
+void plat_invalidateL2Range ( paddr_t start, paddr_t end );
 
-void plat_cleanInvalidateL2Range(paddr_t start, paddr_t end);
+void plat_cleanInvalidateL2Range ( paddr_t start, paddr_t end );
 
-static inline void* CONST
-paddr_to_kpptr(paddr_t paddr)
+static inline void *CONST
+paddr_to_kpptr ( paddr_t paddr )
 {
-    assert(paddr < PADDR_HIGH_TOP);
-    assert(paddr >= PADDR_LOAD);
-    return (void*)(paddr + KERNEL_BASE_OFFSET);
+    assert ( paddr < PADDR_HIGH_TOP );
+    assert ( paddr >= PADDR_LOAD );
+    return ( void * ) ( paddr + KERNEL_BASE_OFFSET );
 }
 
 static inline paddr_t CONST
-kpptr_to_paddr(void *pptr)
+kpptr_to_paddr ( void *pptr )
 {
-    assert((word_t)pptr >= KERNEL_BASE);
-    return (paddr_t)pptr - KERNEL_BASE_OFFSET;
+    assert ( ( word_t ) pptr >= KERNEL_BASE );
+    return ( paddr_t ) pptr - KERNEL_BASE_OFFSET;
 }
 
 #endif /* !__ASSEMBLER__ */
