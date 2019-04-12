@@ -20,17 +20,21 @@
 #define __PLAT_MACHINE_H
 
 #ifndef __ASSEMBLER__
+
+#define PLIC_MAX_NUM_INT   53
+
+
 enum IRQConstants {
-    INTERRUPT_SW = 0,
-    INTERRUPT_TIMER = 5,
-    /* TODO: Handle PLIC and add external IRQs upon needed */
-    maxIRQ = 5
+    PLIC_IRQ_OFFSET = 0,
+    PLIC_MAX_IRQ = PLIC_IRQ_OFFSET + PLIC_MAX_NUM_INT,
+    INTERRUPT_CORE_TIMER,
+    maxIRQ = INTERRUPT_CORE_TIMER,
 } platform_interrupt_t;
 
-#define KERNEL_TIMER_IRQ INTERRUPT_TIMER
+#define KERNEL_TIMER_IRQ INTERRUPT_CORE_TIMER
 
 enum irqNumbers {
-    irqInvalid = 6
+    irqInvalid = 0
 };
 
 typedef uint32_t interrupt_t;

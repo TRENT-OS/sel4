@@ -23,7 +23,14 @@
 
 exception_t Arch_checkIRQ(word_t irq)
 {
-    return EXCEPTION_SYSCALL_ERROR;
+    if (irq > PLIC_MAX_IRQ && irq != irqInvalid) {
+        current_syscall_error.type = seL4_RangeError;
+        current_syscall_error.rangeErrorMin = 0;
+        current_syscall_error.rangeErrorMax = maxIRQ;
+        userError("Rejecting request for IRQ %u. IRQ is greater than maxIRQ.", (int)irq);
+        return EXCEPTION_SYSCALL_ERROR;
+    }
+    return EXCEPTION_NONE;
 }
 
 exception_t Arch_decodeIRQControlInvocation(word_t invLabel, word_t length,

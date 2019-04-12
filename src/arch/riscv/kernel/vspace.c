@@ -98,6 +98,12 @@ static pte_t pte_next(word_t phys_addr, bool_t is_leaf)
 
 /* ==================== BOOT CODE STARTS HERE ==================== */
 
+BOOT_CODE void map_kernel_frame(paddr_t paddr, pptr_t vaddr, vm_rights_t vm_rights)
+{
+	assert(vaddr >= PPTR_TOP);
+        kernel_root_pageTable[RISCV_GET_PT_INDEX(vaddr, 1)] = pte_next(paddr, true);
+}
+
 BOOT_CODE VISIBLE void map_kernel_window(void)
 {
     /* mapping of kernelBase (virtual address) to kernel's physBase  */
@@ -144,6 +150,7 @@ BOOT_CODE VISIBLE void map_kernel_window(void)
 
     /* There should be 1GiB free where we will put device mapping some day */
     assert(pptr == UINTPTR_MAX - RISCV_GET_LVL_PGSIZE(1) + 1);
+    map_kernel_devices();
 }
 
 BOOT_CODE void map_it_pt_cap(cap_t vspace_cap, cap_t pt_cap)
