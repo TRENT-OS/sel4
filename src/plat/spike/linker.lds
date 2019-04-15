@@ -78,7 +78,7 @@ SECTIONS
         . = . + 8;
     }
 
-    . = ALIGN(64K);
+    . = ALIGN(16384K);
 
     .boot . : AT(ADDR(.boot) - KERNEL_OFFSET)
     {
