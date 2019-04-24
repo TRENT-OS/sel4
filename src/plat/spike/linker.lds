@@ -41,6 +41,9 @@ SECTIONS
 {
     . = KERNEL_BASE;
 
+    /* Reserve RAM for pre-seL4 boot stage and for SEOS. */
+    . = . + 262144;
+
     .bootdata . : AT(ADDR(.bootdata) - KERNEL_OFFSET)
     {
         *(.boot.data)
