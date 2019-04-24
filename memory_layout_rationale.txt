@@ -1,0 +1,51 @@
+Logical Memory Map
+
+Items in the following two enumerations are located at increasing addresses. 
+The first item is located at the very start of the memory region.
+
+RAM (0x01000000)
+- RAM_A: Proxy Kernel / Boot Loader (written by HC)
+- RAM_B: SEOS
+- RAM_C: elf-loader
+- RAM_D: seL4 boot code (= boot code belonging to seL4 and running at the time execution is passed to seL4)
+- RAM_E: seL4 sdata (= data which needs initialization from ROM)
+- RAM_F: seL4 data (= all the data seL4 needs for its operation)
+
+ROM (0x02000000)
+- ROM_A: seL4 code
+- ROM_B: seL4 sdata (for initializing RAM_E)
+- ROM_C: Proxy Kernel
+- ROM_D: elf-loader (the remaining part which we want to re-use)
+- ROM_E: Boot Loader (written by HC)
+Terminology: the "kernel image" is the region defined by the two constants KERNEL_BASE and ki_end in 
+seL4's linker script (kernel/src/plat/spike/linker.lds).
+
+In the above layout the kernel image will be placed at the beginning of RAM_A. It will end at the start of ROM_B.
+
+The guiding principle in choosing this layout has been to have seL4 in ROM (working) with as few code changes as possible. 
+They are:
+- change seL4's linker script to have one region of data and one region of text
+- change seL4's linker script to position it at RAM_A
+- change seL4's linker script to have an offset between data and text such that it matches the physical offset between RAM and ROM
+- change seL4's linker script to have its data start at an relative offset such that physically starts at RAM_D
+- change seL4's init_freemem function: its sanity checks now have to assume that the root task is located before the kernel image
+
+Note: with this layout, specifically,
+- there are no changes required to the two map_kernel_window functions
+- there is no change required to seL4's part which frees (adds it to "untypeds") RAM_D
+
+However, compared to the RAM-version of seL4 this layout adds two peculiar properties to the kernel image which 
+may have negative implications which only can be appreciated with the full knowledge of seL4:
+- P1: the kernel image (physically) contains "living" data not belonging to seL4 (RAM_A - RAM_C). 
+(Technically the kernel is creating such a scenario by freeing RAM_D - but here seL4 is using a 64K alignment 
+between RAM_D and RAM_E)
+- P2: the kernel image contains regions which are not backed by memory at all (RAM, ROM)
+
+Consideration of these new properties:
+- P2: is a result of the decision not to change the aspect of the kernel image: "contain every piece of data and text of seL4". 
+Doing so, probably, would require some very careful consideration of seL4's implementation.
+- P1: accepting P1 should not affect seL4's implementation (assuming it is only using quantities defined in linker segments). 
+But it rises side channel considerations. P1 can be removed with a (fairly) simple change of the physical memory layout: 
+if the RAM is split into two separate blocks RAM_1 and RAM_2 (separated by more than 2MB) then the kernel image could be 
+placed at RAM_2 and RAM_1 would contain RAM_A to RAM_C. (RAM_D would probably be lost - which for the spike platform 
+would be no big deal because it is fairly small (<1KB).)
