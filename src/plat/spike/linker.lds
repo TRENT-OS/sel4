@@ -41,41 +41,26 @@ SECTIONS
 {
     . = KERNEL_BASE;
 
-    .boot . : AT(ADDR(.boot) - KERNEL_OFFSET)
+    /* Reserve RAM for pre-seL4 boot stage and for SEOS. */
+    . = . + 1792 * 1024;
+
+    KERNEL_BASE_DATA = .;
+
+    .bootdata . : AT(ADDR(.bootdata) - KERNEL_OFFSET)
     {
-        *(.boot.text)
-        *(.boot.rodata)
         *(.boot.data)
         . = ALIGN(64K);
     }
 
+    . = ALIGN(64K);
 
     ki_boot_end = .;
-
-    .text . : AT(ADDR(.text) - KERNEL_OFFSET)
-    {
-        /* Sit inside a large frame */
-        . = ALIGN(4K);
-
-
-        /* Standard kernel */
-        *(.text)
-    }
 
     /* Start of data section */
     _sdata = .;
     .sdata : {
         __global_pointer$ = . + 0x800;
         *(.sdata*)
-    }
-    .srodata : {
-        *(.srodata*)
-    }
-
-    .rodata . : AT(ADDR(.rodata) - KERNEL_OFFSET)
-    {
-        *(.rodata)
-        *(.rodata.*)
     }
 
     .data . : AT(ADDR(.data) - KERNEL_OFFSET)
@@ -96,6 +81,36 @@ SECTIONS
         /* large data such as the globals frame and global PD */
         *(.bss.aligned)
         . = . + 8;
+    }
+
+    . = ALIGN(2 * 1024K);
+
+    .boot . : AT(ADDR(.boot) - KERNEL_OFFSET)
+    {
+        *(.boot.text)
+        *(.boot.rodata)
+        . = ALIGN(64K);
+    }
+
+    .text . : AT(ADDR(.text) - KERNEL_OFFSET)
+    {
+        /* Sit inside a large frame */
+        . = ALIGN(4K);
+
+
+        /* Standard kernel */
+        *(.text)
+    }
+
+    /* Start of data section */
+    .srodata : {
+        *(.srodata*)
+    }
+
+    .rodata . : AT(ADDR(.rodata) - KERNEL_OFFSET)
+    {
+        *(.rodata)
+        *(.rodata.*)
     }
 
     . = ALIGN(4K);
