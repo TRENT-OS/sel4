@@ -157,10 +157,19 @@ init_freemem ( region_t ui_reg, region_t dtb_reg )
         {
             // This looks a bit awkward as our symbols are a reference in the kernel image window, but
             // we want to do all allocations in terms of the main kernel window, so we do some translation
-            .start = ( pptr_t ) paddr_to_pptr ( kpptr_to_paddr ( ( void * ) kernelBase ) ),
+            .start = ( ( pptr_t ) paddr_to_pptr ( kpptr_to_paddr ( ( void * ) kernelBase ) ) ) + 1792 * 1024,
             .end   = ( pptr_t ) paddr_to_pptr ( kpptr_to_paddr ( ( void * ) ki_end ) )
         }
     };
+
+    printf ( "init_freemem\n" );
+
+    printf ( "0:start: %016lx\n", res_reg[0].start );
+    printf ( "0:  end: %016lx\n", res_reg[0].end );
+    printf ( "1:start: %016lx\n", res_reg[1].start );
+    printf ( "1:  end: %016lx\n", res_reg[1].end );
+    printf ( "2:start: %016lx\n", res_reg[2].start );
+    printf ( "2:  end: %016lx\n", res_reg[2].end );
 
     for ( i = 0; i < MAX_NUM_FREEMEM_REG; i++ )
     {
@@ -258,7 +267,7 @@ try_init_kernel (
     cap_t ipcbuf_cap;
     p_region_t boot_mem_reuse_p_reg = ( ( p_region_t )
     {
-        kpptr_to_paddr ( ( void * ) KERNEL_BASE ), kpptr_to_paddr ( ki_boot_end )
+        kpptr_to_paddr ( ( void * ) ( KERNEL_BASE + 1792 * 1024 ) ), kpptr_to_paddr ( ki_boot_end )
     } );
     region_t boot_mem_reuse_reg = paddr_to_pptr_reg ( boot_mem_reuse_p_reg );
     region_t ui_reg = paddr_to_pptr_reg ( ( p_region_t )
@@ -287,16 +296,26 @@ try_init_kernel (
     it_v_reg.start = ui_v_reg.start;
     it_v_reg.end = bi_frame_vptr + BIT ( PAGE_BITS );
 
+    printf ( "k_s00\n" );
+
     map_kernel_window();
+
+    printf ( "k_s01\n" );
 
     /* initialise the CPU */
     init_cpu();
 
+    printf ( "k_s02\n" );
+
     /* initialize the platform */
     init_plat ( dtb_reg );
 
+    printf ( "k_s03\n" );
+
     /* make the free memory available to alloc_region() */
     init_freemem ( ui_reg, dtb_reg );
+
+    printf ( "k_s04\n" );
 
     /* create the root cnode */
     root_cnode_cap = create_root_cnode();
