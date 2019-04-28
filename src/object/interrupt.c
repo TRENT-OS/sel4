@@ -140,7 +140,11 @@ exception_t decodeIRQHandlerInvocation(word_t invLabel, irq_t irq,
 
 void invokeIRQHandler_AckIRQ(irq_t irq)
 {
+#ifdef CONFIG_ARCH_RISCV
+    plic_complete_claim(irq);
+#else
     maskInterrupt(false, irq);
+#endif
 }
 
 void invokeIRQHandler_SetIRQHandler(irq_t irq, cap_t cap, cte_t *slot)
@@ -203,7 +207,9 @@ void handleInterrupt(irq_t irq)
             printf("Undelivered IRQ: %d\n", (int)irq);
 #endif
         }
+#ifndef CONFIG_ARCH_RISCV
         maskInterrupt(true, irq);
+#endif
         break;
     }
 

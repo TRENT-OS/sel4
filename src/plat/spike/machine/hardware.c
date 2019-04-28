@@ -136,7 +136,7 @@ static interrupt_t plic_get_claim(void)
            PLIC_THRES_CLAIM);
 }
 
-static void plic_complete_claim(interrupt_t irq) {
+void plic_complete_claim(interrupt_t irq) {
     /*completion */
     writel(irq, PLIC_PPTR_BASE + PLIC_THRES + PLIC_THRES_PER_HART * PLIC_HARTID +
        PLIC_THRES_CLAIM);
@@ -206,8 +206,6 @@ interrupt_t getActiveIRQ(void)
     uint32_t irq;
     if (!IS_IRQ_VALID(active_irq)) {
         active_irq = getNewActiveIRQ();
-        if (active_irq != KERNEL_TIMER_IRQ) {
-        }
     }
 
     if (IS_IRQ_VALID(active_irq)) {
