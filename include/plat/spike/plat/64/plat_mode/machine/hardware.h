@@ -27,7 +27,7 @@
 #define PPTR_BASE        0xFFFFFFC000000000lu
 /* This is the mapping of the kernel (mapped above the kernel window currently) */
 #define KERNEL_BASE      0xFFFFFFFF80000000lu
-#define KERNEL_ELF_BASE  0xFFFFFFFF82000000lu
+#define KERNEL_ELF_BASE  0xFFFFFFFF81F80000lu
 #else
 #error Only PT_LEVELS == 3 is supported
 #endif

@@ -24,7 +24,8 @@ ENTRY(_start)
 #if CONFIG_PT_LEVELS == 2
 KERNEL_ELF_BASE  = 0xFF800000;
 #elif CONFIG_PT_LEVELS == 3
-KERNEL_ELF_BASE  = 0xFFFFFFFF82000000;
+KERNEL_ELF_BASE  = 0xFFFFFFFF81F80000;
+KERNEL_ELF_CODE_BASE  = 0xFFFFFFFF82000000;
 #elif CONFIG_PT_LEVELS == 4
 #error PT_LEVELS == 4 is not supported yet
 #endif
@@ -33,7 +34,7 @@ KERNEL_ELF_BASE  = 0xFFFFFFFF82000000;
 #ifdef CONFIG_BUILD_ROCKET_CHIP_ZEDBOARD
 PADDR_LOAD     = 0x0000000088000000;
 #else
-PADDR_LOAD     = 0x0000000002000000;
+PADDR_LOAD     = 0x0000000001F80000;
 #endif
 KERNEL_OFFSET = KERNEL_ELF_BASE - PADDR_LOAD;
 
@@ -41,41 +42,20 @@ SECTIONS
 {
     . = KERNEL_ELF_BASE;
 
-    .boot . : AT(ADDR(.boot) - KERNEL_OFFSET)
+    .bootdata . : AT(ADDR(.bootdata) - KERNEL_OFFSET)
     {
-        *(.boot.text)
-        *(.boot.rodata)
         *(.boot.data)
         . = ALIGN(64K);
     }
 
-
     ki_boot_end = .;
 
-    .text . : AT(ADDR(.text) - KERNEL_OFFSET)
-    {
-        /* Sit inside a large frame */
-        . = ALIGN(4K);
-
-
-        /* Standard kernel */
-        *(.text)
-    }
 
     /* Start of data section */
     _sdata = .;
     .sdata : {
         __global_pointer$ = . + 0x800;
         *(.sdata*)
-    }
-    .srodata : {
-        *(.srodata*)
-    }
-
-    .rodata . : AT(ADDR(.rodata) - KERNEL_OFFSET)
-    {
-        *(.rodata)
-        *(.rodata.*)
     }
 
     .data . : AT(ADDR(.data) - KERNEL_OFFSET)
@@ -96,6 +76,35 @@ SECTIONS
         /* large data such as the globals frame and global PD */
         *(.bss.aligned)
         . = . + 8;
+    }
+    . = KERNEL_ELF_CODE_BASE;
+
+    .boot . : AT(ADDR(.boot) - KERNEL_OFFSET)
+    {
+        *(.boot.text)
+        *(.boot.rodata)
+        . = ALIGN(64K);
+    }
+
+    .text . : AT(ADDR(.text) - KERNEL_OFFSET)
+    {
+        /* Sit inside a large frame */
+        . = ALIGN(4K);
+
+
+        /* Standard kernel */
+        *(.text)
+    }
+
+    /* Start of data section */
+    .srodata : {
+        *(.srodata*)
+    }
+
+    .rodata . : AT(ADDR(.rodata) - KERNEL_OFFSET)
+    {
+        *(.rodata)
+        *(.rodata.*)
     }
 
     . = ALIGN(4K);
