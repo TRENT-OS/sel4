@@ -30,6 +30,8 @@ typedef uint32_t irq_t;
 #include <plat_instance/rocket-chip/hardware.h>
 #elif defined(CONFIG_BUILD_HI_FIVE_UNLEASHED)
 #include <plat/instance/hifive/hardware.h>
+#elif defined(CONFIG_BUILD_HCSC1)
+#include <plat/instance/hcsc1/hardware.h>
 #else
 #error "Unsupported spike platform chosen"
 #endif

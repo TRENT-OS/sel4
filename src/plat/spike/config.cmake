@@ -25,6 +25,7 @@ config_choice(
     "qemu;KernelPlatformSpikeQemu;BUILD_SPIKE_QEMU;KernelArchRiscV"
     "rocket-chip-zedboard;KernelPlatformSpikeRocketChip;BUILD_ROCKET_CHIP_ZEDBOARD;KernelSel4ArchRiscV64"
     "hi-five-unleashed;KernelPlatformSpikeSiFiveFreedom;BUILD_HI_FIVE_UNLEASHED;KernelSel4ArchRiscV64"
+    "hcsc1;KernelPlatformSpikeHCSC1;BUILD_HCSC1;KernelSel4ArchRiscV64"
 )
 
 config_string(
@@ -38,6 +39,10 @@ set(DefaultFirstHartID 0)
 include(src/plat/spike/instance/qemu/config.cmake)
 include(src/plat/spike/instance/rocket-chip/config.cmake)
 include(src/plat/spike/instance/freedom/config.cmake)
+
+if(KernelPlatformSpikeHCSC1)
+    set(KernelPlatformSpikeClockFrequency 5000000)
+endif()
 
 config_string(
     KernelPlatformSpikeFirstHartID FIRST_HART_ID "HART ID of the first kernel HART "
