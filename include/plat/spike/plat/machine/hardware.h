@@ -41,6 +41,10 @@
 #define PADDR_LOAD 0x01e00000lu
 #endif
 
+/* The kernel image (KERNEL_BASE) is placed at the start of the internal RAM.
+ * seL4 needs to know how much of the internal RAM is reserved for applications. */
+#define RESERVED_USERLAND_RAM 0x1c0000lu
+
 /* The highest valid physical address that can be indexed in the kernel window */
 #define PADDR_TOP (KERNEL_BASE - PPTR_BASE + PADDR_BASE)
 /* The highest valid physical address that can be used for the kernel image. We offset by
