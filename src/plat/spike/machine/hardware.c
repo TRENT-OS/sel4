@@ -39,22 +39,8 @@
 
 #define RESET_CYCLES ((CONFIG_SPIKE_CLOCK_FREQ / MS_IN_S) * CONFIG_TIMER_TICK_MS)
 
-#define PLIC_HARTID 2
-
-#define PLIC_PRIO            0x0
-#define PLIC_PRIO_PER_ID     0x4
-
-#define PLIC_EN         0x2000
-#define PLIC_EN_PER_HART    0x80
-
-#define PLIC_THRES      0x200000
-#define PLIC_THRES_PER_HART 0x1000
-#define PLIC_THRES_CLAIM    0x4
-
-
-#define PLIC_BASE           0x0C000000
-#define PLIC_PPTR_BASE      0xFFFFFFFFCC000000
 #define IS_IRQ_VALID(X) (((X)) <= maxIRQ && (X)!= irqInvalid)
+volatile struct plic *const plic = (void*)PLIC_PPTR_BASE;
 
 static const kernel_frame_t BOOT_RODATA kernel_devices[] = {
     {
@@ -64,29 +50,6 @@ static const kernel_frame_t BOOT_RODATA kernel_devices[] = {
     }
 };
 
-/* Available physical memory regions on platform (RAM minus kernel image). */
-/* NOTE: Regions are not allowed to be adjacent! */
-
-static p_region_t BOOT_DATA avail_p_regs[] = {
-    /* The first 2MB are reserved for the SBI in the BBL */
-#if defined(CONFIG_BUILD_ROCKET_CHIP_ZEDBOARD)
-    { /*.start = */ 0x0, /* .end = */ 0x10000000}
-#elif defined(CONFIG_ARCH_RISCV64)
-    // { /*.start = */ 0x80200000, /* .end = */ 0x17FF00000}
-    { /*.start = */ 0x80200000, /* .end = */ 0xa0000000}
-#elif defined(CONFIG_ARCH_RISCV32)
-    { /*.start = */ 0x80200000, /* .end = */ 0xFD000000}
-#endif
-};
-
-static const p_region_t BOOT_RODATA dev_p_regs[] = {
-    { 0x10010000, 0x10011000 }, /* UART0 */
-    { 0x10011000, 0x10012000 }, /* UART1 */
-    { 0x10020000, 0x10021000 }, /* PWM0 */
-    { 0x10021000, 0x10022000 }, /* PWM1 */
-    { 0x10060000, 0x10061000 }, /* GPIO */
-    { 0x10090000, 0x10091000 }, /* ETH */
-};
 
 BOOT_CODE int get_num_avail_p_regs(void)
 {
@@ -114,63 +77,6 @@ BOOT_CODE void map_kernel_devices(void)
         map_kernel_frame(kernel_devices[i].paddr,
                 kernel_devices[i].pptr,
                 VMKernelOnly);
-    }
-}
-
-static inline uint32_t readl(const volatile uint64_t addr)
-{
-    uint32_t val;
-    asm volatile("lw %0, 0(%1)" : "=r"(val) : "r"(addr));
-
-    return val;
-}
-
-static inline void writel(uint32_t val, volatile uint64_t addr)
-{
-    asm volatile("sw %0, 0(%1)" : : "r"(val), "r"(addr));
-}
-
-static interrupt_t plic_get_claim(void)
-{
-    return readl(PLIC_PPTR_BASE + PLIC_THRES + PLIC_THRES_PER_HART * PLIC_HARTID +
-           PLIC_THRES_CLAIM);
-}
-
-void plic_complete_claim(interrupt_t irq) {
-    /*completion */
-    writel(irq, PLIC_PPTR_BASE + PLIC_THRES + PLIC_THRES_PER_HART * PLIC_HARTID +
-       PLIC_THRES_CLAIM);
-}
-
-static void plic_mask_irq(bool_t disable, interrupt_t irq) {
-    uint64_t addr = 0;
-    uint32_t val = 0;
-
-    if (disable) {
-        if (irq >= 32) {
-            irq -= 32;
-            addr = 0x4;
-        }
-
-        addr += PLIC_PPTR_BASE + PLIC_EN;
-        val = readl(addr + PLIC_EN_PER_HART * PLIC_HARTID);
-        val &= ~BIT(irq);
-        writel(val, addr + PLIC_EN_PER_HART * PLIC_HARTID);
-
-    } else {
-        /* Account for external and PLIC interrupts */
-        if (irq >= 32) {
-            irq -= 32;
-            addr = 0x4;
-        }
-
-        addr += PLIC_PPTR_BASE + PLIC_EN;
-        val = readl(addr + PLIC_EN_PER_HART * PLIC_HARTID);
-        val |= BIT(irq);
-        writel(val, addr + PLIC_EN_PER_HART * PLIC_HARTID);
-
-        // Clear any pending claims as they won't be raised again.
-        plic_complete_claim(irq);
     }
 }
 
@@ -332,38 +238,7 @@ BOOT_CODE void initIRQController(void)
 {
     printf("Initialing PLIC...\n");
 
-    uint32_t pending;
-
-    /* Clear all pending bits */
-    pending = readl(PLIC_PPTR_BASE + 0x1000);
-    for (int i = 0; i < 32 ; i++) {
-        if (pending & (1 << i)) {
-                readl(PLIC_PPTR_BASE + PLIC_THRES +
-                PLIC_THRES_PER_HART * PLIC_HARTID +
-                    PLIC_THRES_CLAIM);
-        }
-    }
-    pending = readl(PLIC_PPTR_BASE + 0x1004);
-    for (int i = 0; i < 22 ; i++) {
-        if (pending & (1 << i)) {
-                readl(PLIC_PPTR_BASE + PLIC_THRES +
-                PLIC_THRES_PER_HART * PLIC_HARTID +
-                    PLIC_THRES_CLAIM);
-        }
-    }
-
-    /* Disable interrupts */
-    writel(0, PLIC_PPTR_BASE + PLIC_EN + PLIC_EN_PER_HART * PLIC_HARTID);
-    writel(0, PLIC_PPTR_BASE + PLIC_EN + PLIC_EN_PER_HART * PLIC_HARTID + 0x4);
-
-    /* Set threshold to zero */
-    writel(1, (PLIC_PPTR_BASE + PLIC_THRES + PLIC_THRES_PER_HART * PLIC_HARTID));
-
-    /* Set the priorities of all interrupts to 1 */
-    for (int i = 1; i <= PLIC_MAX_NUM_INT + 1; i++) {
-        writel(2, PLIC_PPTR_BASE + PLIC_PRIO + PLIC_PRIO_PER_ID * i);
-    }
-
+    plic_init_controller();
     set_sie_mask(BIT(9));
 }
 

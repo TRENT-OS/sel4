@@ -66,7 +66,6 @@ int get_num_dev_p_regs(void);
 p_region_t get_dev_p_reg(word_t i);
 void map_kernel_devices(void);
 
-void plic_complete_claim(interrupt_t irq);
 void ackInterrupt(irq_t irq);
 bool_t isIRQPending(void);
 /** MODIFIES: [*] */

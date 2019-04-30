@@ -13,4 +13,5 @@
 #ifndef __PLAT_MACHINE_TIMER_H
 #define __PLAT_MACHINE_TIMER_H
 
+#include <plat/machine.h>
 #endif /* !__PLAT_MACHINE_TIMER_H */

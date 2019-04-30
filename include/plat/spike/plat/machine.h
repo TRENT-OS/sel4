@@ -21,8 +21,18 @@
 
 #ifndef __ASSEMBLER__
 
-#define PLIC_MAX_NUM_INT   53
+typedef uint32_t interrupt_t;
+typedef uint32_t irq_t;
 
+#if defined(CONFIG_BUILD_SPIKE_QEMU)
+#include <plat_instance/hardware.h>
+#elif defined(CONFIG_BUILD_ROCKET_CHIP_ZEDBOARD)
+#include <plat_instance/rocket-chip/hardware.h>
+#elif defined(CONFIG_BUILD_HI_FIVE_UNLEASHED)
+#include <plat/instance/hifive/hardware.h>
+#else
+#error "Unsupported spike platform chosen"
+#endif
 
 enum IRQConstants {
     PLIC_IRQ_OFFSET = 0,
@@ -36,9 +46,6 @@ enum IRQConstants {
 enum irqNumbers {
     irqInvalid = 0
 };
-
-typedef uint32_t interrupt_t;
-typedef uint32_t irq_t;
 
 #endif /* !__ASSEMBLER__ */
 #endif
