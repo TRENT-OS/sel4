@@ -37,12 +37,16 @@ PADDR_LOAD     = 0x0000000001000000;
 #endif
 KERNEL_OFFSET = KERNEL_BASE - PADDR_LOAD;
 
+/* The kernel image (KERNEL_BASE) is placed at the start of the internal RAM.
+ * seL4 needs to know how much of the internal RAM is reserved for applications. */
+RESERVED_USERLAND_RAM = 0x1c0000;
+
 SECTIONS
 {
     . = KERNEL_BASE;
 
     /* Reserve RAM for pre-seL4 boot stage and for SEOS. */
-    . = . + 262144;
+    . = . + RESERVED_USERLAND_RAM;
 
     .bootdata . : AT(ADDR(.bootdata) - KERNEL_OFFSET)
     {

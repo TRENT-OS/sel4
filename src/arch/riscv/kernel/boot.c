@@ -157,7 +157,7 @@ init_freemem ( region_t ui_reg, region_t dtb_reg )
         {
             // This looks a bit awkward as our symbols are a reference in the kernel image window, but
             // we want to do all allocations in terms of the main kernel window, so we do some translation
-            .start = ( pptr_t ) paddr_to_pptr ( kpptr_to_paddr ( ( void * ) kernelBase ) ),
+            .start = ( ( pptr_t ) paddr_to_pptr ( kpptr_to_paddr ( ( void * ) kernelBase ) ) ) + RESERVED_USERLAND_RAM,
             .end   = ( pptr_t ) paddr_to_pptr ( kpptr_to_paddr ( ( void * ) ki_end ) )
         }
     };
@@ -258,7 +258,7 @@ try_init_kernel (
     cap_t ipcbuf_cap;
     p_region_t boot_mem_reuse_p_reg = ( ( p_region_t )
     {
-        kpptr_to_paddr ( ( void * ) KERNEL_BASE ), kpptr_to_paddr ( ki_boot_end )
+        kpptr_to_paddr ( ( void * ) ( KERNEL_BASE + RESERVED_USERLAND_RAM ) ), kpptr_to_paddr ( ki_boot_end )
     } );
     region_t boot_mem_reuse_reg = paddr_to_pptr_reg ( boot_mem_reuse_p_reg );
     region_t ui_reg = paddr_to_pptr_reg ( ( p_region_t )
