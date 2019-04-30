@@ -217,7 +217,12 @@ interrupt_t getActiveIRQ(void)
     return irq;
 }
 
-
+#ifdef HAVE_SET_TRIGGER
+void setIRQTrigger(irq_t irq, bool_t edge_triggered)
+{
+    plic_irq_set_trigger(irq, edge_triggered);
+}
+#endif
 
 /* Check for pending IRQ */
 bool_t isIRQPending(void)
