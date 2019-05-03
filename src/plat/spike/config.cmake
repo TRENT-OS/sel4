@@ -22,10 +22,10 @@ config_choice(
     KernelSpikeInstance
     RISCV_SPIKE_INSTANCE
     "Select the instance for Spike to run on"
+    "hcsc1;KernelPlatformSpikeHCSC1;BUILD_HCSC1;KernelSel4ArchRiscV64"
     "qemu;KernelPlatformSpikeQemu;BUILD_SPIKE_QEMU;KernelArchRiscV"
     "rocket-chip-zedboard;KernelPlatformSpikeRocketChip;BUILD_ROCKET_CHIP_ZEDBOARD;KernelSel4ArchRiscV64"
     "hi-five-unleashed;KernelPlatformSpikeSiFiveFreedom;BUILD_HI_FIVE_UNLEASHED;KernelSel4ArchRiscV64"
-    "hcsc1;KernelPlatformSpikeHCSC1;BUILD_HCSC1;KernelSel4ArchRiscV64"
 )
 
 config_string(
