@@ -136,7 +136,7 @@ BOOT_CODE static void init_freemem(region_t ui_reg)
         {
             // This looks a bit awkward as our symbols are a reference in the kernel image window, but
             // we want to do all allocations in terms of the main kernel window, so we do some translation
-            .start = (pptr_t)paddr_to_pptr(kpptr_to_paddr((void *)kernelBase)),
+            .start = (pptr_t)paddr_to_pptr(kpptr_to_paddr((void *)KERNEL_ELF_BASE)),
             .end   = (pptr_t)paddr_to_pptr(kpptr_to_paddr((void *)ki_end))
         },
         {
