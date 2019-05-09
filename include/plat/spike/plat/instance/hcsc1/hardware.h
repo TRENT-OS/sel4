@@ -78,7 +78,7 @@ static inline void plic_init_controller(void) {
 /* Available physical memory regions on platform (RAM minus kernel image). */
 /* NOTE: Regions are not allowed to be adjacent! */
 static const p_region_t BOOT_RODATA avail_p_regs[] = {
-     { /*.start = */ 0x1e13000, /* .end = */ 0x2100000}
+     { /*.start = */ 0x01013000, /* .end = */ 0x01200000}
 };
 
 static const p_region_t BOOT_RODATA dev_p_regs[] = {
