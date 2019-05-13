@@ -59,6 +59,8 @@ BOOT_CODE pptr_t alloc_region(word_t size_bits)
     region_t new_rem_small;
     region_t new_rem_large;
 
+    printf("alloc region: bits: %lx\n", size_bits);
+
     /* Search for a freemem region that will be the best fit for an allocation. We favour allocations
      * that are aligned to either end of the region. If an allocation must split a region we favour
      * an unbalanced split. In both cases we attempt to use the smallest region possible. In general
