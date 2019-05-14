@@ -142,6 +142,7 @@ BOOT_CODE static void init_freemem(region_t ui_reg)
         {
             .start = ui_reg.start,
             .end = ui_reg.end
+
         },
         {
             // This looks a bit awkward as our symbols are a reference in the kernel image window, but
@@ -150,6 +151,9 @@ BOOT_CODE static void init_freemem(region_t ui_reg)
             .end   = (pptr_t)paddr_to_pptr(kpptr_to_paddr((void *)ki_end))
         }
     };
+
+    res_reg[0].start = res_reg[1].start - 8192;
+    res_reg[0].end = res_reg[1].start;
 
     for (i = 0; i < MAX_NUM_FREEMEM_REG; i++) {
         ndks_boot.freemem[i] = REG_EMPTY;
