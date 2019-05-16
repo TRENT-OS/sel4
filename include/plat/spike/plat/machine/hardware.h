@@ -40,7 +40,7 @@
  * as the largest frame size */
 
 // ok
-#define PADDR_LOAD 0x010a0000lu
+#define PADDR_LOAD 0x40800000lu
 
 // change physical load address: nok
 //#define PADDR_LOAD 0x01000000lu
