@@ -36,7 +36,8 @@
 trap_entry:
 
   csrrw t0, sscratch, t0
-
+  beqz t0, trap_from_supervisor_mode
+    
   STORE ra, (0*REGBYTES)(t0)
   STORE sp, (1*REGBYTES)(t0)
   STORE gp, (2*REGBYTES)(t0)
@@ -114,3 +115,7 @@ interrupt:
   /* Save NEXTPC */
   STORE   x1, (34*REGBYTES)(t0)
   j c_handle_interrupt
+
+trap_from_supervisor_mode:
+trap_from_supervisor_mode_loop:
+  j trap_from_supervisor_mode_loop
