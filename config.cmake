@@ -110,7 +110,7 @@ config_string(
     DEFAULT 230
     UNQUOTE
 )
-config_option(KernelFastpath FASTPATH "Enable IPC fastpath" DEFAULT ON)
+config_option(KernelFastpath FASTPATH "Enable IPC fastpath" DEFAULT OFF)
 
 config_string(
     KernelNumDomains NUM_DOMAINS "The number of scheduler domains in the system"

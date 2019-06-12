@@ -160,6 +160,7 @@ void VISIBLE NORETURN c_handle_syscall(word_t cptr, word_t msgInfo, word_t unuse
         fastpath_reply_recv(cptr, msgInfo);
         UNREACHABLE();
     }
+#xxx    
 #endif /* CONFIG_FASTPATH */
     slowpath(syscall);
     UNREACHABLE();
