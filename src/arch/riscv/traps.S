@@ -69,6 +69,11 @@ trap_entry:
   STORE t5, (29*REGBYTES)(t0)
   STORE t6, (30*REGBYTES)(t0)
 
+  la a0, 0xffffffff81070018
+  lw a1, (a0)
+  addi a1, a1, 1
+  sw a1, (a0)
+
   /* save t0 value */
 /*  
   csrr  x1, sscratch
@@ -107,19 +112,43 @@ syscall:
   /* Save NEXTPC */
   STORE   x1, (34*REGBYTES)(t0)
 
+  la a0, 0xffffffff81070028
+  lw a1, (a0)
+  addi a1, a1, 1
+  sw a1, (a0)
+
   j c_handle_syscall
 
 /* Not an interrupt or a syscall */
 exception:
   /* Save NEXTPC */
   STORE   x1, (34*REGBYTES)(t0)
+
+  la a0, 0xffffffff81070030
+  lw a1, (a0)
+  addi a1, a1, 1
+  sw a1, (a0)
+
   j c_handle_exception
 
 interrupt:
   /* Save NEXTPC */
   STORE   x1, (34*REGBYTES)(t0)
+
+  la a0, 0xffffffff81070020
+  lw a1, (a0)
+  addi a1, a1, 1
+  sw a1, (a0)
+
   j c_handle_interrupt
 
 trap_from_supervisor_mode:
+  la a0, 0xffffffff81070038
+  lw a1, (a0)
+  addi a1, a1, 2
+  sw a1, (a0)
+  la a0, 0xffffffff81070040
+  csrr a1, scause
+  sw a1, (a0)
 trap_from_supervisor_mode_loop:
   j trap_from_supervisor_mode_loop
