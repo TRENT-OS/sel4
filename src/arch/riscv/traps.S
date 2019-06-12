@@ -70,7 +70,11 @@ trap_entry:
   STORE t6, (30*REGBYTES)(t0)
 
   /* save t0 value */
+/*  
   csrr  x1, sscratch
+*/
+  csrrw  x1, sscratch, x0
+  
   STORE    x1, (4*REGBYTES)(t0)
 
   csrr x1, sstatus
