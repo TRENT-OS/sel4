@@ -41,7 +41,7 @@ include(src/plat/spike/instance/rocket-chip/config.cmake)
 include(src/plat/spike/instance/freedom/config.cmake)
 
 if(KernelPlatformSpikeHCSC1)
-    set(KernelPlatformSpikeClockFrequency 5000000)
+    set(KernelPlatformSpikeClockFrequency 16800)
 endif()
 
 config_string(
