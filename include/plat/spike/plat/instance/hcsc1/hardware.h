@@ -21,16 +21,27 @@
 
 // #include <plat/machine/peripherals_plic.h>
 struct plic {
+    // Offset: 0x00
     uint64_t config;
+    // Offset: 0x08
     uint32_t el;
+    // Offset: 0x0c
     uint32_t priority0;
+    // Offset: 0x10
     uint32_t priority1;
+    // Offset: 0x14
     uint32_t priority2;
+    // Offset: 0x18
     uint32_t ietarget0;
+    // Offset: 0x1c
     uint32_t ietarget1;
+    // Offset: 0x20
     uint32_t threshold0;
+    // Offset: 0x24
     uint32_t threshold1;
+    // Offset: 0x28
     uint32_t idtarget0;
+    // Offset: 0x2c
     uint32_t idtarget1;
 };
 extern volatile struct plic *const plic;
