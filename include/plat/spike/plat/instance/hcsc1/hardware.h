@@ -91,6 +91,7 @@ static inline void plic_init_controller(void) {
 static const p_region_t BOOT_RODATA avail_p_regs[] = {
 // INT_STEP_01
      { /*.start = */ 0x01080000, /* .end = */ 0x01100000},
+     { /*.start = */ 0x40000000, /* .end = */ 0x40100000},
      { /*.start = */ 0x40280000, /* .end = */ 0x40800000},
 #if 0     
      { /*.start = */ 0x41200000, /* .end = */ 0x41800000}
