@@ -79,6 +79,8 @@ static inline void plic_init_controller(void) {
 /* NOTE: Regions are not allowed to be adjacent! */
 static p_region_t BOOT_DATA avail_p_regs[] = {
      { /*.start = */ 0x01080000, /* .end = */ 0x01100000},
+     { /*.start = */ 0x40000000, /* .end = */ 0x40100000},
+     { /*.start = */ 0x40280000, /* .end = */ 0x40800000},
 };
 
 
