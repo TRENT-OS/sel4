@@ -70,6 +70,20 @@ static inline word_t read_scause(void)
     return temp;
 }
 
+static inline word_t read_stval(void)
+{
+    word_t temp;
+    asm volatile("csrr %0, stval" : "=r"(temp));
+    return temp;
+}
+
+static inline word_t read_satp(void)
+{
+    word_t temp;
+    asm volatile("csrr %0, satp" : "=r"(temp));
+    return temp;
+}
+
 static inline word_t read_sepc(void)
 {
     word_t temp;
@@ -117,11 +131,19 @@ static inline void setVSpaceRoot(paddr_t addr, asid_t asid)
     satp_t satp = satp_new(SATP_MODE,              /* mode */
                            asid,                         /* asid */
                            addr >> seL4_PageBits); /* PPN */
+//#if 0
+    /* Order read/write operations */
+    sfence();
+    
+    hwASIDFlush(0);
+//#endif
 
     /* Current toolchain still uses sptbr register name although it got renamed in priv-1.10.
      * This will most likely need to change with newer toolchains
      */
     write_sptbr(satp.words[0]);
+
+    hwASIDFlush(0);
 
     /* Order read/write operations */
     sfence();

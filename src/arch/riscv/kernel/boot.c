@@ -278,6 +278,9 @@ static BOOT_CODE bool_t try_init_kernel(
 
     printf("s03\n");
 
+    printf("PADDR_HIGH_TOP %lx\n", PADDR_HIGH_TOP);
+    printf("PADDR_LOAD %lx\n", PADDR_LOAD);
+
     /* make the free memory available to alloc_region() */
     init_freemem(ui_reg);
 
