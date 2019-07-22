@@ -36,19 +36,19 @@ struct plic {
 extern volatile struct plic *const plic;
 static inline interrupt_t plic_get_claim(void)
 {
-    return plic->idtarget0;
+    return plic->idtarget1;
 }
 
 static inline void plic_complete_claim(interrupt_t irq) {
-    plic->idtarget0 = irq;
+    plic->idtarget1 = irq;
 }
 
 static inline void plic_mask_irq(bool_t disable, interrupt_t irq) {
     if(disable) {
-        plic->ietarget0 &= ~BIT(irq-1);
+        plic->ietarget1 &= ~BIT(irq-1);
         plic_complete_claim(irq);
     } else {
-        plic->ietarget0 |= BIT(irq-1);
+        plic->ietarget1 |= BIT(irq-1);
     }
 }
 
@@ -63,7 +63,7 @@ static inline void plic_irq_set_trigger(irq_t irq, bool_t edge_triggered) {
 }
 
 static inline void plic_init_controller(void) {
-    volatile uint32_t *priorities = (uint32_t *)&plic->priority0;
+    volatile uint32_t *priorities = (uint32_t *)&plic->priority1;
     for (int i = 1; i<= PLIC_MAX_NUM_INT; i++) {
         plic_mask_irq(true, i);
         int index = (i-1) / 8;
@@ -71,7 +71,7 @@ static inline void plic_init_controller(void) {
         priorities[index] |= BIT(bit);
     }
     plic->el = 0;
-    plic->threshold0 = 0;
+    plic->threshold1 = 0;
 
 }
 
