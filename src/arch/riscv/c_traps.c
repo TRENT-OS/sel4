@@ -35,7 +35,6 @@ void VISIBLE NORETURN restore_user_context(void)
 
     c_exit_hook();
 
-    *((unsigned int  *)(0xffffffff81070000)) += 1;
     NODE_UNLOCK_IF_HELD;
 
     asm volatile(
