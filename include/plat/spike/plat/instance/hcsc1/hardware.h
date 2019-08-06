@@ -90,9 +90,17 @@ static inline void plic_init_controller(void) {
 /* NOTE: Regions are not allowed to be adjacent! */
 static const p_region_t BOOT_RODATA avail_p_regs[] = {
 // INT_STEP_01
-     { /*.start = */ 0x01080000, /* .end = */ 0x01100000},
+     /* 128 K for the proxy kernel are enough. */
+     { /*.start = */ 0x01020000, /* .end = */ 0x01100000},
+     /* The FPGA image currently has RAM at the ROM address; use it. */
+     { /*.start = */ 0x02000000, /* .end = */ 0x02080000},
+
+     /* The RAM we need to unpack the seL4_test image. */
+     { /*.start = */ 0x40280000, /* .end = */ 0x403b9000},
+#if 0     
      { /*.start = */ 0x40000000, /* .end = */ 0x40100000},
      { /*.start = */ 0x40280000, /* .end = */ 0x40800000},
+#endif     
 #if 0     
      { /*.start = */ 0x41200000, /* .end = */ 0x41800000}
 #endif
@@ -103,6 +111,8 @@ static const p_region_t BOOT_RODATA dev_p_regs[] = {
     { 0x00405000, 0x00406000 }, /* UART1 */
     { 0x00406000, 0x00407000 }, /* UART2 */
     { 0x00408000, 0x00409000 }, /* UART2 */
+    { /*.start = */ 0x40000000, /* .end = */ 0x40100000},
+    { /*.start = */ 0x40400000, /* .end = */ 0x40800000},
 };
 
 #endif
