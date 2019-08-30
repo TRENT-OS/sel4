@@ -27,6 +27,10 @@
 .extern restore_user_context
 .extern trap_entry
 
+_rom_start:
+  lui x10, 0x02040
+  jalr x0, x10
+
 _start:
 .option push
 .option norelax
