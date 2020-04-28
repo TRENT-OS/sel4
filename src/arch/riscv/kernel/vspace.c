@@ -189,7 +189,8 @@ BOOT_CODE void map_it_pt_cap(cap_t vspace_cap, cap_t pt_cap)
                       0,  /* read */
                       1 /* valid */
                   );
-    sfence();
+    hwASIDFlush(IT_ASID);
+
 }
 
 BOOT_CODE void map_it_frame_cap(cap_t vspace_cap, cap_t frame_cap)
@@ -216,7 +217,8 @@ BOOT_CODE void map_it_frame_cap(cap_t vspace_cap, cap_t frame_cap)
                       1,  /* read */
                       1   /* valid */
                   );
-    sfence();
+    hwASIDFlush(IT_ASID);
+
 }
 
 BOOT_CODE cap_t create_unmapped_it_frame_cap(pptr_t pptr, bool_t use_large)
@@ -302,7 +304,7 @@ BOOT_CODE cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_re
 
 BOOT_CODE void activate_kernel_vspace(void)
 {
-    setVSpaceRoot(kpptr_to_paddr(&kernel_root_pageTable), 0);
+    setVSpaceRoot(kpptr_to_paddr(&kernel_root_pageTable), KERNEL_ASID);
 }
 
 BOOT_CODE void write_it_asid_pool(cap_t it_ap_cap, cap_t it_lvl1pt_cap)
@@ -540,7 +542,7 @@ void unmapPageTable(asid_t asid, vptr_t vptr, pte_t *target_pt)
                   0,  /* read */
                   0  /* valid */
               );
-    sfence();
+    hwASIDFlush(asid);
 }
 
 static pte_t pte_pte_invalid_new(void)
@@ -570,7 +572,7 @@ void unmapPage(vm_page_size_t page_size, asid_t asid, vptr_t vptr, pptr_t pptr)
     }
 
     lu_ret.ptSlot[0] = pte_pte_invalid_new();
-    sfence();
+    hwASIDFlush(asid);
 }
 
 void setVMRoot(tcb_t *tcb)
@@ -583,7 +585,7 @@ void setVMRoot(tcb_t *tcb)
     threadRoot = TCB_PTR_CTE_PTR(tcb, tcbVTable)->cap;
 
     if (cap_get_capType(threadRoot) != cap_page_table_cap) {
-        setVSpaceRoot(kpptr_to_paddr(&kernel_root_pageTable), 0);
+        setVSpaceRoot(kpptr_to_paddr(&kernel_root_pageTable), KERNEL_ASID);
         return;
     }
 
@@ -592,7 +594,7 @@ void setVMRoot(tcb_t *tcb)
     asid = cap_page_table_cap_get_capPTMappedASID(threadRoot);
     find_ret = findVSpaceForASID(asid);
     if (unlikely(find_ret.status != EXCEPTION_NONE || find_ret.vspace_root != lvl1pt)) {
-        setVSpaceRoot(kpptr_to_paddr(&kernel_root_pageTable), 0);
+        setVSpaceRoot(kpptr_to_paddr(&kernel_root_pageTable), KERNEL_ASID);
         return;
     }
 
@@ -1055,7 +1057,7 @@ exception_t decodeRISCVMMUInvocation(word_t label, word_t length, cptr_t cptr,
 
         /* Find first free ASID */
         asid = cap_asid_pool_cap_get_capASIDBase(cap);
-        for (i = 0; i < BIT(asidLowBits) && (asid + i == 0 || pool->array[i]); i++);
+        for (i = 0; i < BIT(asidLowBits) && (asid + i == 0 || asid + i == 1 || pool->array[i]); i++);
 
         if (i == BIT(asidLowBits)) {
             current_syscall_error.type = seL4_DeleteFirst;
@@ -1078,7 +1080,7 @@ exception_t performPageTableInvocationMap(cap_t cap, cte_t *ctSlot,
 {
     ctSlot->cap = cap;
     *ptSlot = pte;
-    sfence();
+    hwASIDFlush(cap_page_table_cap_get_capPTMappedASID(cap));
 
     return EXCEPTION_NONE;
 }
@@ -1114,18 +1116,13 @@ static exception_t performPageGetAddress(void *vbase_ptr)
     return EXCEPTION_NONE;
 }
 
-static exception_t updatePTE(pte_t pte, pte_t *base)
-{
-    *base = pte;
-    sfence();
-    return EXCEPTION_NONE;
-}
-
 exception_t performPageInvocationMapPTE(cap_t cap, cte_t *ctSlot,
                                         pte_t pte, pte_t *base)
 {
     ctSlot->cap = cap;
-    return updatePTE(pte, base);
+    *base = pte;
+    hwASIDFlush(cap_frame_cap_get_capFMappedASID(cap));
+    return EXCEPTION_NONE;
 }
 
 exception_t performPageInvocationUnmap(cap_t cap, cte_t *ctSlot)

@@ -203,12 +203,6 @@ static inline void setVSpaceRoot(paddr_t addr, asid_t asid)
 
     write_satp(satp.words[0]);
 
-    /* Order read/write operations */
-#ifdef ENABLE_SMP_SUPPORT
-    sfence_local();
-#else
-    sfence();
-#endif
 }
 
 static inline void Arch_finaliseInterrupt(void)
