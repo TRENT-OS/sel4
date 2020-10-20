@@ -178,6 +178,7 @@ CONTROLLERS = {
     'brcm,bcm2836-l1-intc': RawIrqController,
     'fsl,avic': RawIrqController,
     'fsl,imx6q-gpc': PassthroughIrqController,
+    'fsl,imx6sx-gpc': PassthroughIrqController,
     'fsl,imx7d-gpc': PassthroughIrqController,
     'nvidia,tegra124-ictlr': PassthroughIrqController,
     'qcom,msm-qgic2': ArmGic,

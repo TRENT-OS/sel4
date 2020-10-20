@@ -8,12 +8,13 @@ cmake_minimum_required(VERSION 3.7.2)
 
 declare_platform(imx6 KernelPlatImx6 PLAT_IMX6 KernelSel4ArchAarch32)
 
-set(c_configs PLAT_SABRE PLAT_WANDQ)
-set(cmake_configs KernelPlatformSabre KernelPlatformWandQ)
-set(plat_lists sabre wandq)
+set(c_configs PLAT_SABRE PLAT_WANDQ PLAT_NITROGEN6SX)
+set(cmake_configs KernelPlatformSabre KernelPlatformWandQ KernelPlatformNitrogen6SX)
+set(plat_lists sabre wandq nitrogen6sx)
 foreach(config IN LISTS cmake_configs)
     unset(${config} CACHE)
 endforeach()
+
 if(KernelPlatImx6)
     declare_seL4_arch(aarch32)
     set(KernelArmCortexA9 ON)
@@ -28,6 +29,15 @@ if(KernelPlatImx6)
     list(GET cmake_configs ${index} cmake_config)
     config_set(KernelARMPlatform ARM_PLAT ${KernelARMPlatform})
     config_set(${cmake_config} ${c_config} ON)
+
+    if(KernelPlatformSabre OR KernelPlatformWandQ)
+        config_set(KernelPlatImx6q PLAT_IMX6DQ ON)
+    elseif(KernelPlatformNitrogen6SX)
+        config_set(KernelPlatImx6sx PLAT_IMX6SX ON)
+    else()
+        message(FATAL_ERROR "imx6 SOC is not specified")
+    endif()
+
     list(APPEND KernelDTSList "tools/dts/${KernelARMPlatform}.dts")
     list(APPEND KernelDTSList "src/plat/imx6/overlay-${KernelARMPlatform}.dts")
 
