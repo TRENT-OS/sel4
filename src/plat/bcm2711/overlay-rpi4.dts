@@ -18,7 +18,14 @@
 	};
 
 	memory@0 {
-		/* This is configurable in the Pi's config.txt, but we use 128MiB of RAM by default. */
-		reg = <0x00 0x00000000 0x08000000>;
+		/* NOTE The Pi 4 can have {1,2,4}GB of RAM. During typical (e.g.
+		 * Raspbian) boot, the GPU bootloader sets this property. This
+		 * value was observed from within Raspbian on a 4GB Pi (from
+		 * /proc/dev/ice-tree/memory and /proc/iomem).
+		 */
+
+		reg = < 0x0        0x0 0x3b400000
+		        0x0 0x40000000 0xbc000000 >;
+
 	};
 };
