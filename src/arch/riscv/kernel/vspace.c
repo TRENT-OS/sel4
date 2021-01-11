@@ -152,6 +152,8 @@ BOOT_CODE VISIBLE void map_kernel_window(void)
 
 /*
     while (pptr < KERNEL_BASE + RISCV_GET_LVL_PGSIZE(1)) {
+*/
+    while (index < 0x0200) {
         kernel_image_level2_pt[index] = pte_next(paddr, true);
         index++;
         pptr += RISCV_GET_LVL_PGSIZE(2);
