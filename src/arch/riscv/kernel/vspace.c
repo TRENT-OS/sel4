@@ -126,6 +126,11 @@ BOOT_CODE VISIBLE void map_kernel_window(void)
     /* now we should be mapping the 1GiB kernel base */
     assert(pptr == KERNEL_BASE);
     paddr = ROUND_DOWN(PADDR_LOAD, RISCV_GET_LVL_PGSIZE_BITS(1));
+    
+    printf("PADDR_LOAD %lx\n", PADDR_LOAD);
+
+    printf("paddr %lx\n", paddr);
+    printf("pptr %lx\n", pptr);
 
 #if __riscv_xlen == 32
     kernel_root_pageTable[RISCV_GET_PT_INDEX(pptr, 1)] = pte_next(paddr, true);
@@ -140,6 +145,12 @@ BOOT_CODE VISIBLE void map_kernel_window(void)
         pte_next(kpptr_to_paddr(kernel_image_level2_pt), false);
     kernel_root_pageTable[RISCV_GET_PT_INDEX(pptr, 1)] =
         pte_next(kpptr_to_paddr(kernel_image_level2_pt), false);
+
+
+    printf("PADDR_LOAD + BASE_OFFSET %lx\n", PADDR_LOAD + BASE_OFFSET);
+    printf("paddr %lx\n", paddr);
+
+/*
     while (pptr < KERNEL_BASE + RISCV_GET_LVL_PGSIZE(1)) {
         kernel_image_level2_pt[index] = pte_next(paddr, true);
         index++;
@@ -147,6 +158,8 @@ BOOT_CODE VISIBLE void map_kernel_window(void)
         paddr += RISCV_GET_LVL_PGSIZE(2);
     }
 #endif
+
+    printf("index %lx\n", index);
 
     /* There should be 1GiB free where we will put device mapping some day */
     assert(pptr == UINTPTR_MAX - RISCV_GET_LVL_PGSIZE(1) + 1);
@@ -302,6 +315,8 @@ BOOT_CODE cap_t create_it_address_space(cap_t root_cnode_cap, v_region_t it_v_re
 
 BOOT_CODE void activate_kernel_vspace(void)
 {
+    //printf("s0000\n");
+
     setVSpaceRoot(kpptr_to_paddr(&kernel_root_pageTable), 0);
 }
 

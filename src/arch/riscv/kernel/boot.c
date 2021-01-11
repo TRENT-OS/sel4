@@ -88,6 +88,12 @@ BOOT_CODE cap_t create_mapped_it_frame_cap(cap_t pd_cap, pptr_t pptr, vptr_t vpt
     return cap;
 }
 
+static bool_t my_insert_region(region_t mem_reg)
+{
+    printf("my_insert_region: %lx %lx\n", mem_reg.start, mem_reg.end);
+    return insert_region(mem_reg);
+}
+
 /**
  * Split mem_reg about reserved_reg. If memory exists in the lower
  * segment, insert it. If memory exists in the upper segment, return it.
@@ -116,7 +122,7 @@ BOOT_CODE static region_t insert_region_excluded(region_t mem_reg, region_t rese
     }
     /* Add the lower region if it exists */
     if (mem_reg.start < mem_reg.end) {
-        result = insert_region(mem_reg);
+        result = my_insert_region(mem_reg);
         assert(result);
     }
     /* Validate the upper region */
@@ -171,7 +177,7 @@ BOOT_CODE static void init_freemem(region_t ui_reg)
         cur_reg = insert_region_excluded(cur_reg, res_reg[1]);
 
         if (cur_reg.start != cur_reg.end) {
-            result = insert_region(cur_reg);
+            result = my_insert_region(cur_reg);
             assert(result);
         }
     }
@@ -198,11 +204,16 @@ extern char trap_entry[1];
 
 BOOT_CODE static void init_cpu(void)
 {
+    printf("s000\n");
 
     /* Write trap entry address to stvec */
     write_stvec((word_t)trap_entry);
 
+    printf("s001\n");
+
     activate_kernel_vspace();
+
+    printf("s002\n");
 }
 
 /* This and only this function initialises the platform. It does NOT initialise any kernel state. */
@@ -226,6 +237,9 @@ static BOOT_CODE bool_t try_init_kernel(
     cap_t it_pd_cap;
     cap_t it_ap_cap;
     cap_t ipcbuf_cap;
+
+    printf("s01\n");
+
     p_region_t boot_mem_reuse_p_reg = ((p_region_t) {
         kpptr_to_paddr((void *)KERNEL_ELF_BASE), kpptr_to_paddr(ki_boot_end)
     });
@@ -251,22 +265,43 @@ static BOOT_CODE bool_t try_init_kernel(
     it_v_reg.start = ui_v_reg.start;
     it_v_reg.end = bi_frame_vptr + BIT(PAGE_BITS);
 
+    printf("s02\n");
+
     map_kernel_window();
+
+    printf("s03\n");
 
     /* initialise the CPU */
     init_cpu();
 
+    printf("s04\n");
+
+
     /* initialize the platform */
     init_plat();
+
+    printf("PADDR_HIGH_TOP %lx\n", PADDR_HIGH_TOP);
+    printf("PADDR_LOAD %lx\n", PADDR_LOAD);
+
+    printf("s05\n");
+
+
 
     /* make the free memory available to alloc_region() */
     init_freemem(ui_reg);
 
+    printf("s060\n");
     /* create the root cnode */
     root_cnode_cap = create_root_cnode();
+
+    printf("s061\n");
+
     if (cap_get_capType(root_cnode_cap) == cap_null_cap) {
+    printf("s062\n");
         return false;
     }
+
+    printf("s07\n");
 
     /* create the cap for managing thread domains */
     create_domain_cap(root_cnode_cap);
@@ -276,8 +311,12 @@ static BOOT_CODE bool_t try_init_kernel(
         return false;
     }
 
+    printf("s08\n");
+
     /* initialise the IRQ states and provide the IRQ control cap */
     init_irqs(root_cnode_cap);
+
+    printf("s09\n");
 
     /* create the bootinfo frame */
     bi_frame_pptr = allocate_bi_frame(0, CONFIG_MAX_NUM_NODES, ipcbuf_vptr);
@@ -285,12 +324,16 @@ static BOOT_CODE bool_t try_init_kernel(
         return false;
     }
 
+    printf("s0a\n");
+
     /* Construct an initial address space with enough virtual addresses
      * to cover the user image + ipc buffer and bootinfo frames */
     it_pd_cap = create_it_address_space(root_cnode_cap, it_v_reg);
     if (cap_get_capType(it_pd_cap) == cap_null_cap) {
         return false;
     }
+
+    printf("s0b\n");
 
     /* Create and map bootinfo frame cap */
     create_bi_frame_cap(
@@ -306,6 +349,8 @@ static BOOT_CODE bool_t try_init_kernel(
         return false;
     }
 
+    printf("s0c\n");
+
     /* create all userland image frames */
     create_frames_ret =
         create_frames_of_region(
@@ -320,17 +365,24 @@ static BOOT_CODE bool_t try_init_kernel(
     }
     ndks_boot.bi_frame->userImageFrames = create_frames_ret.region;
 
+    printf("s0d\n");
+
     /* create the initial thread's ASID pool */
     it_ap_cap = create_it_asid_pool(root_cnode_cap);
     if (cap_get_capType(it_ap_cap) == cap_null_cap) {
         return false;
     }
+
+        printf("s0e\n");
+
     write_it_asid_pool(it_ap_cap, it_pd_cap);
 
     /* create the idle thread */
     if (!create_idle_thread()) {
         return false;
     }
+
+    printf("s0f\n");
 
 
     /* create the initial thread */
@@ -347,6 +399,8 @@ static BOOT_CODE bool_t try_init_kernel(
         return false;
     }
 
+    printf("s10\n");
+
     init_core_state(initial);
 
     /* convert the remaining free memory into UT objects and provide the caps */
@@ -356,6 +410,8 @@ static BOOT_CODE bool_t try_init_kernel(
         return false;
     }
 
+    printf("s11\n");
+
     /* no shared-frame caps (RISCV has no multikernel support) */
     ndks_boot.bi_frame->sharedFrames = S_REG_EMPTY;
 
@@ -363,6 +419,8 @@ static BOOT_CODE bool_t try_init_kernel(
     bi_finalise();
 
     ksNumCPUs = 1;
+
+    printf("s12\n");
 
     printf("Booting all finished, dropped to user space\n");
     return true;
@@ -375,6 +433,10 @@ BOOT_CODE VISIBLE void init_kernel(
     vptr_t  v_entry
 )
 {
+
+    printf("s00\n");
+
+
     bool_t result = try_init_kernel(ui_p_reg_start,
                                     ui_p_reg_end,
                                     pv_offset,

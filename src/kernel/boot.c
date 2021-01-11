@@ -59,6 +59,8 @@ BOOT_CODE pptr_t alloc_region(word_t size_bits)
     region_t new_rem_small;
     region_t new_rem_large;
 
+    printf("alloc region: bits: %lx\n", size_bits);
+
     /* Search for a freemem region that will be the best fit for an allocation. We favour allocations
      * that are aligned to either end of the region. If an allocation must split a region we favour
      * an unbalanced split. In both cases we attempt to use the smallest region possible. In general
@@ -111,6 +113,9 @@ BOOT_CODE pptr_t alloc_region(word_t size_bits)
         printf("alloc_region(): wasted 0x%lx bytes due to alignment, try to increase MAX_NUM_FREEMEM_REG\n",
                (word_t)(rem_small.end - rem_small.start));
     }
+
+    printf("reg.start %lx\n", reg.start);
+
     return reg.start;
 }
 
@@ -138,6 +143,7 @@ create_root_cnode(void)
 
     /* write the number of root CNode slots to global state */
     ndks_boot.slot_pos_max = BIT(CONFIG_ROOT_CNODE_SIZE_BITS);
+    printf("s0601\n");
 
     /* create an empty root CNode */
     pptr = alloc_region(CONFIG_ROOT_CNODE_SIZE_BITS + seL4_SlotBits);
@@ -145,7 +151,13 @@ create_root_cnode(void)
         printf("Kernel init failing: could not create root cnode\n");
         return cap_null_cap_new();
     }
+
+    printf("s0602\n");
+
     memzero(CTE_PTR(pptr), 1U << (CONFIG_ROOT_CNODE_SIZE_BITS + seL4_SlotBits));
+
+    printf("s0603\n");
+
     cap =
         cap_cnode_cap_new(
             CONFIG_ROOT_CNODE_SIZE_BITS,      /* radix      */
@@ -154,8 +166,12 @@ create_root_cnode(void)
             pptr                              /* pptr       */
         );
 
+    printf("s0604\n");
+
     /* write the root CNode cap into the root CNode */
     write_slot(SLOT_PTR(pptr, seL4_CapInitThreadCNode), cap);
+
+    printf("s0605\n");
 
     return cap;
 }
