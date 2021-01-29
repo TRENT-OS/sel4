@@ -140,14 +140,14 @@ BOOT_CODE static void init_freemem(region_t ui_reg)
     region_t cur_reg;
     region_t res_reg[] = {
         {
-            .start = ui_reg.start,
-            .end = ui_reg.end
-        },
-        {
             // This looks a bit awkward as our symbols are a reference in the kernel image window, but
             // we want to do all allocations in terms of the main kernel window, so we do some translation
             .start = (pptr_t)paddr_to_pptr(kpptr_to_paddr((void *)KERNEL_ELF_BASE)),
             .end   = (pptr_t)paddr_to_pptr(kpptr_to_paddr((void *)ki_end))
+        },
+        {
+            .start = ui_reg.start,
+            .end = ui_reg.end
         }
     };
 
