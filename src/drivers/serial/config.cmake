@@ -44,3 +44,9 @@ register_driver(
     PREFIX src/drivers/serial
     CFILES "meson-gx-uart.c"
 )
+
+register_driver(
+    compatibility_strings "hc,migv-uart"
+    PREFIX src/drivers/serial
+    CFILES "migv-uart.c"
+)
