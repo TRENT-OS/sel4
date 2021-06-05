@@ -11,67 +11,69 @@
 #if CONFIG_PT_LEVELS == 3
 
 /*
- * The top half of the address space is reserved for the kernel. This means that 256 top level
- * entries are for the user, and 256 are for the kernel. This will be further split into the
- * 'regular' kernel window, which contains mappings to physical memory, a small (1GiB) higher
- * kernel image window that we use for running the actual kernel from and a top 1GiB window for
- * kernel device mappings. This means that between PPTR_BASE and
- * KERNEL_ELF_BASE there are 254 entries remaining, which represents how much physical memory
- * can be used.
+ * Physical address space layout
  *
- * Almost all of the top 256 kernel entries will contain 1GiB page mappings. The only 2 entries
- * that contain a 2nd level PageTable consisting of 2MiB page entries is the entry
- * for the 1GiB Kernel ELF region and the 1GiB region corresponding to the physical memory
- * of the kernel ELF in the kernel window.  The same 2nd level PageTable is used and so both
- * entries refer to the same 1GiB of physical memory.
- * This means that the 1GiB kernel ELF mapping will correspond to physical memory with a 1GiB
- * alignment.
+ *                                          +-------------+
+ *                                          |     not     |
+ *                                          |    kernel   |
+ *                                          | addressable |
+ *       PADDR_TOP (= PPTR_TOP - PPTR_BASE) +-------------+ 254 GiB <-+
+ *                                          |             |           |
+ * KDEV_BASE - KERNEL_ELF_BASE + PADDR_LOAD +-------------+           |
+ *                                          |  Kernel ELF |           | PSpace
+ *                    KERNEL_ELF_PADDR_BASE +-------------+           |
+ *                                          |             |           |
+ *                                          +-------------+ 0  <------+
  *
- *                   +-----------------------------+ 2^64
- *                   |        Kernel Devices       |
- *                -> +-------------------KDEV_BASE-+ 2^64 - 1GiB
- *                |  |         Kernel ELF          |
- *            ----|  +-------------KERNEL_ELF_BASE-+ --+ 2^64 - 2GiB + (KERNEL_ELF_PADDR_BASE % 1GiB)
- *            |   |  |                             |
- *            |   -> +-----------------------------+ --+ 2^64 - 2GiB = (KERNEL_ELF_BASE % 1GiB)
- * Shared 1GiB|      |                             |   |
- * table entry|      |           PSpace            |   |
- *            |      |  (direct kernel mappings)   |   +----+
- *            ------>|                             |   |    |
- *                   |                             |   |    |
- *                   +-------------------PPTR_BASE-+ --+ 2^64 - 2^b
- *                   |                             |        |         +-------------------------+
- *                   |                             |        |         |                         |
- *                   |                             |        |         |                         |
- *                   |          Invalid            |        |         |                         |
- *                   |                             |        |         |           not           |
- *                   |                             |        |         |         kernel          |
- *                   |                             |        |         |       addressable       |
- *                   +--------------------USER_TOP-+  2^c   |         |                         |
- *                   |                             |        |         |                         |
- *                   |                             |        |         |                         |
- *                   |                             |        |      +- --------------------------+  PADDR_TOP =
- *                   |                             |        |      |  |                         |    PPTR_TOP - PPTR_BASE
- *                   |                             |        |      |  |                         |
- *                   |                             |        |      |  |                         |
- *                   |            User             |        |      |  |                         |
- *                   |                             |        |      |  |                         |
- *                   |                             |        +------+  +-------------------------+  KDEV_BASE - KERNEL_ELF_BASE + PADDR_LOAD
- *                   |                             |     kernel    |  |        Kernel ELF       |
- *                   |                             |   addressable |  +-------------------------+  KERNEL_ELF_PADDR_BASE
- *                   |                             |               |  |                         |
- *                   |                             |               |  |                         |
- *                   +-----------------------------+  0            +- +-------------------------+  0 PADDR_BASE
+ * Virtual address space layout
  *
- *                      virtual address space                          physical address space
+ * The RISC-V SV39 MMU model splits the top level page table in the middle, the
+ * entries 0 to 255 addresse the virtual memory from 0 to 256 GiB, the entries
+ * 256 to 511 the are from 2^64 - 256 GiB to 2^64 GiB. The common unsage is,
+ * that the low addresses range is used for user mapping, the high address range
+ * is for kernel mappings. seL4 also follows this concept.
+ * The entries 256 - 509 are used to map the physical address space directly
+ * with a 1 GiB granularity, so the physical address 0 - 254 GiB is at available
+ * to the kernel at the virtual address 0xfffffffc000000000. The remaining 2
+ * page table entries 510 and 511 contain a 2nd level page  table reference. The
+ * top 1 GiB window is used for kernel device mappings, the 1 GiB below this
+ * (starting at KERNEL_ELF_BASE) is the kernel image window, which is used for
+ * running the actual kernel.
+ * The kernel code segment is supposed to be linked to a 2 MiB aligned address
+ * and the kernel size is less then 2 MiB. Thus it can be mapped in a singe
+ * 2 MiB page. This allows sharing the same 2nd level page table for the kernel
+ * image window and the kernel device mapping. The remaining 511 free entries
+ * there can be used for device mappings or other purposes.
  *
+ *                              +----------------+ 2^64
+ *                              | Kernel Devices |
+ *          +-------> KDEV_BASE +----------------+ 2^64 - 1 GiB
+ *          |                   |                |
+ *          |                   +----------------+
+ *          |                   |     Kernel     |
+ *        +-+-> KERNEL_ELF_BASE +----------------+ 2^64 - 2 GiB + (KERNEL_ELF_PADDR_BASE % 1GiB)
+ * Shared | |                   |                |
+ * 1GiB   | +-----------------> +----------------+ 2^64 - 2 GiB
+ * table  |                     |     PSpace     |
+ * entry  |                     |      with      |
+ *        |                     |     direct     |
+ *        +-------------------> |     kernel     |
+ *                              |    mappings    |
+ *                    PPTR_BASE +----------------+ 2^64 - 2^b
+ *                              |################|
+ *                              : not accessible :
+ *                              |################|
+ *                     USER_TOP +----------------+ 2^c
+ *                              |      User      |
+ *                   PADDR_BASE +----------------+ 0
  *
  *  c = one less than number of bits the page tables can translate
  *    = sign extension bit for canonical addresses
- *    (= 47 on x64, 38 on RISCV64 sv39, 47 on RISCV64 sv48)
+ *    = 38 on RV64/SV39
+ *    = 47 on RV64/SV48
  *  b = The number of bits used by kernel mapping.
- *    = 38 (half of the 1 level page table) on RISCV64 sc39
- *    = 39 (entire second level page table) on aarch64 / X64 / sv48
+ *    = 38 (half of the 1 level page table) on RV64/SV39
+ *    = 39 (entire second level page table) on RV64/SV48
  */
 
 /* last accessible virtual address in user space */
