@@ -13,6 +13,10 @@ if(KernelPlatformMiGV)
     config_set(KernelRiscVPlatform RISCV_PLAT "migv")
     config_set(KernelPlatformFirstHartID FIRST_HART_ID 0)
     config_set(KernelOpenSBIPlatform OPENSBI_PLATFORM "generic")
+
+    # ROM Kernel
+    config_set(KernelDontRecycleBootMem DONT_RECYCLE_BOOT_MEM ON)
+
     list(
         APPEND
         KernelDTSList

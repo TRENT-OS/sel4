@@ -74,6 +74,12 @@
  *  b = The number of bits used by kernel mapping.
  *    = 38 (half of the 1 level page table) on RV64/SV39
  *    = 39 (entire second level page table) on RV64/SV48
+ *
+ * Support running the kernel from ROM:
+ * - create different mappings for the the kernel code segment and the RAM. This
+ *   can easily be achieved when using another 2 MiB page mapping for the kernel
+ *   RAM.
+ * - can't recycle kernel boot code segment for RAM
  */
 
 /* last accessible virtual address in user space */

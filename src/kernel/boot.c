@@ -677,6 +677,7 @@ BOOT_CODE bool_t create_untypeds(cap_t root_cnode_cap,
         }
     }
 
+#ifndef CONFIG_DONT_RECYCLE_BOOT_MEM
     /* if boot_mem_reuse_reg is not empty, we can create UT objs from boot code/data frames */
     if (!create_untypeds_for_region(root_cnode_cap, false, boot_mem_reuse_reg, first_untyped_slot)) {
         printf("ERROR: creation of untypeds for recycled boot memory"
@@ -684,6 +685,7 @@ BOOT_CODE bool_t create_untypeds(cap_t root_cnode_cap,
                boot_mem_reuse_reg.start, boot_mem_reuse_reg.end);
         return false;
     }
+#endif /* !CONFIG_DONT_RECYCLE_BOOT_MEM */
 
     /* convert remaining freemem into UT objects and provide the caps */
     for (word_t i = 0; i < ARRAY_SIZE(ndks_boot.freemem); i++) {
