@@ -1,0 +1,22 @@
+/*
+ * Copyright 2020, Hensoldt Cyber
+ *
+ * SPDX-License-Identifier: BSD-2-Clause and GPL-2.0-or-later
+ */
+
+/ {
+    chosen {
+        seL4,boot-cpu = <&{/cpus/cpu@0}>;
+        seL4,kernel-devices = "plic", "clint";
+    };
+
+    reserved-memory {
+        #address-cells = <0x01>;
+        #size-cells = <0x01>;
+        ranges;
+        sbi@010E0000  { // last 36 KiB are reserved for BMRBL/SBI
+            reg = <0x010DF000 0x00021000>;
+            no-map;
+        };
+    };
+};

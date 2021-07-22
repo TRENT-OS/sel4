@@ -193,6 +193,7 @@ devices:
       - ti,omap3-uart
       - xlnx,xuartps
       - ns16550a
+      - hc,migv-uart
     regions:
       - index: 0
         kernel: UART_PPTR
@@ -207,6 +208,22 @@ devices:
       - index: 0
         kernel: PLIC_PPTR
         kernel_size: 0x04000000
+
+  # MiG-V PLIC
+  - compatible:
+      - migv-1.0,plic
+    regions:
+      - index: 0
+        kernel: PLIC_PPTR
+        kernel_size: 0x1000
+
+  # MiG-V CLINT
+  - compatible:
+      - riscv,clint0
+    regions:
+      - index: 0
+        kernel: CLINT_PPTR
+        kernel_size: 0xc0000
 
   # elfloader rules
   - compatible:

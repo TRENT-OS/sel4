@@ -1,0 +1,156 @@
+/*
+ * Copyright 2020, Hensoldt Cyber
+ *
+ * SPDX-License-Identifier: BSD-2-Clause and GPL-2.0-or-later
+ *
+ */
+
+/dts-v1/;
+
+/ {
+    #address-cells = <1>;
+    #size-cells = <1>;
+
+    compatible = "hc,migv";
+    model = "hc,migv";
+
+//    memory@01000000 { // 1 MiB internal SRAM
+//        device_type = "memory";
+//        compatible = "migv-sram";
+//        reg = <0x01000000 0x100000>;
+//    };
+
+    memory@40000000 { // 64 MiB external SDRAM
+        device_type = "memory";
+        compatible = "migv-sdram";
+        reg = <0x40000000 0x04000000>;
+    };
+
+    cpus {
+        #address-cells = <1>;
+        #size-cells = <0>;
+
+        timebase-frequency = <32768>; // 32 KHz
+
+        cpu@0 {
+            compatible = "riscv"; // "hc,migv", "eth,ariane",
+            device_type = "cpu";
+            reg = <0>;
+            // status = "okay";
+            clock-frequency = <240000000>; // 240 MHz
+            riscv,isa = "rv64imafdc";
+            mmu-type = "riscv,sv39";
+            tlb-split;
+
+            CPU0_INT_CTRL: int-ctrl {
+                #interrupt-cells = <1>;
+                interrupt-controller;
+                compatible = "riscv,cpu-intc";
+            };
+        };
+    };
+
+    soc {
+        compatible = "hc,migv-soc", "simple-bus";
+        ranges;
+
+        #address-cells = <1>;
+        #size-cells = <1>;
+
+        clint@00201000 { // 48 KiB
+            compatible = "riscv,clint0";
+            interrupts-extended = <&CPU0_INT_CTRL 3 &CPU0_INT_CTRL 7>;
+            reg = <0x00201000 0xc0000>;
+            reg-names = "control";
+        };
+
+        PLIC: plic@00200000 {
+            #address-cells = <0>;
+            #interrupt-cells = <3>;
+            compatible = "migv-1.0,plic";
+            reg = <0x00200000 0x1000>;
+            interrupt-controller;
+            interrupts-extended = <&CPU0_INT_CTRL 11 &CPU0_INT_CTRL 9>;
+            riscv,max-priority = <7>;
+            riscv,ndev = <24>;
+        };
+
+        sram@01000000 { // 1 MiB internal SRAM
+            reg = <0x01000000 0x100000>;
+        };
+
+        rom@02000000 { // 512 KiB ROM
+            reg = <0x02000000 0x80000>;
+        };
+
+        flash@03000000 { // 2 MiB internal flash
+            reg = <0x03000000 0x200000>;
+        };
+
+
+        serial@00404000 {
+            compatible = "hc,migv-uart";
+            reg = <0x00404000 0x1000>;
+            interrupt-parent = <&PLIC>;
+            interrupts = < 9 >;
+        };
+
+        serial@00405000 {
+            compatible = "hc,migv-uart";
+            reg = <0x00405000 0x1000>;
+            interrupt-parent = <&PLIC>;
+            interrupts = < 10 >;
+        };
+
+        serial@00406000 {
+            compatible = "hc,migv-uart";
+            reg = <0x00406000 0x1000>;
+            interrupt-parent = <&PLIC>;
+            interrupts = < 11 >;
+        };
+
+        timer@00409000 {
+            compatible = "hc,migv-timer";
+            reg = <0x00409000 0x1000>;
+            interrupt-parent = <&PLIC>;
+            interrupts = < 15 16 >;
+        };
+
+        timer@0040a000 {
+            compatible = "hc,migv-timer";
+            reg = <0x0040a000 0x1000>;
+            interrupt-parent = <&PLIC>;
+            interrupts = < 17 18 >;
+        };
+
+        timer@0040b000 {
+            compatible = "hc,migv-timer";
+            reg = <0x0040b000 0x1000>;
+            interrupt-parent = <&PLIC>;
+            interrupts = < 19 20 >;
+        };
+    };
+
+    aliases {
+        plic    = "/soc/plic@00200000";
+        clint   = "/soc/clint@00201000";
+
+        sram    = "/soc/sram@01000000";
+        rom     = "/soc/rom@02000000";
+        flash   = "/soc/flash@03000000";
+        sdram   = "/memory@40000000";
+
+        serial0 = "/soc/serial@00404000";
+        serial1 = "/soc/serial@00405000";
+        serial2 = "/soc/serial@00406000";
+
+        timer0  = "/soc/timer@00409000";
+        timer1  = "/soc/timer@0040a000";
+        timer2  = "/soc/timer@0040b000";
+    };
+
+    chosen {
+        stdout-path = "serial0:115200";
+    };
+
+};
