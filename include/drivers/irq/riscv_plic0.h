@@ -10,183 +10,182 @@
 #pragma once
 
 /* This is a check that prevents using this driver blindly. Extend the list if
- * this driver is confirmed to be working on other platforms. */
+ * this driver is confirmed to be working on other platforms.
+ */
 #if !defined(CONFIG_PLAT_HIFIVE) && !defined(CONFIG_PLAT_POLARFIRE)
 #error "This code supports the SiFive U54/U74 PLIC only."
 #endif
 
-/* tell the kernel we have the set trigger feature */
-#define HAVE_SET_TRIGGER 1
-
+#include <util.h>
 #include <plat/machine/devices_gen.h>
 #include <arch/model/smp.h>
 #include <arch/machine/plic.h>
 
+/* All global interrupts are edge triggered, so this driver does not define
+ * HAVE_SET_TRIGGER and has no implementation for plic_irq_set_trigger().
+ */
+
+/* Interrupt 0 is a dummy, the real interrupts are 1 - PLIC_MAX_IRQ. */
+#define PLIC_NUM_INTERUPTS          (PLIC_MAX_IRQ + 1)
+#define PLIC_NUM_U32_INTR_BITMAPS   ((PLIC_NUM_INTERUPTS + 31) / 32)
+
+
 /* The memory map is based on the PLIC section in
  * https://static.dev.sifive.com/U54-MC-RVCoreIP.pdf
  */
+typedef volatile struct {
+    uint32_t priority[PLIC_NUM_INTERUPTS];              /* 0x000000 */
+    uint32_t _gap1[1024 - PLIC_NUM_INTERUPTS];
+    uint32_t pending[PLIC_NUM_U32_INTR_BITMAPS];        /* 0x001000 */
+    uint32_t _gap2[1024 - PLIC_NUM_U32_INTR_BITMAPS];
+    struct {                                            /* 0x002000 */
+        /* Core 0 has M-Mode only, cores 1-4 have both M-Mode and  S-Mode, so
+         * there are these register banks of 128 byte each:
+         *   0x002000: Hart 0, M-Mode
+         *   0x002080: Hart 1, M-Mode
+         *   0x002100: Hart 1, S-Mode
+         *   0x002180: Hart 2, M-Mode
+         *   0x002200: Hart 2, S-Mode
+         *   0x002280: Hart 3, M-Mode
+         *   0x002300: Hart 3, S-Mode
+         *   0x002380: Hart 4, M-Mode
+         *   0x002400: Hart 4, S-Mode
+         */
+        uint32_t enable[PLIC_NUM_U32_INTR_BITMAPS];
+        uint32_t _gap[32 - PLIC_NUM_U32_INTR_BITMAPS];
+    } hart_enable[9];
+    uint32_t _gap3[(0x200000 - 0x2480) / 4];
+    struct {                                            /* 0x200000 */
+        /* Core 0 has M-Mode only, cores 1-4 have both M-Mode and  S-Mode, so
+         * there are these register banks of 4096 byte each:
+         *   0x200000: Hart 0, M-Mode
+         *   0x201000: Hart 1, M-Mode
+         *   0x202000: Hart 1, S-Mode
+         *   0x203000: Hart 2, M-Mode
+         *   0x204000: Hart 2, S-Mode
+         *   0x205000: Hart 3, M-Mode
+         *   0x206000: Hart 3, S-Mode
+         *   0x207000: Hart 4, M-Mode
+         *   0x208000: Hart 4, S-Mode
+         */
+        uint32_t threshold;
+        uint32_t claim;
+        uint32_t _gap[1022];
+    } hart_regs[9];
+} plic_t;
 
-#define PLIC_PPTR_BASE          PLIC_PPTR
+SEL4_COMPILE_ASSERT(
+    ERROR_field_pending_for_plic_cfg_t,
+    0x1000 == SEL4_OFFSETOF(plic_t, pending));
+
+SEL4_COMPILE_ASSERT(
+    ERROR_field_hart_enable_for_plic_cfg_t,
+    0x2000 == SEL4_OFFSETOF(plic_t, hart_enable));
+
+SEL4_COMPILE_ASSERT(
+    ERROR_field_hart_enable_1_for_plic_cfg_t,
+    0x2080 == SEL4_OFFSETOF(plic_t, hart_enable[1]));
+
+SEL4_COMPILE_ASSERT(
+    ERROR_invalid_hart_regs_for_plic_cfg_t,
+    0x200000 == SEL4_OFFSETOF(plic_t, hart_regs));
+
+SEL4_COMPILE_ASSERT(
+    ERROR_invalid_hart_regs_1_for_plic_cfg_t,
+    0x201000 == SEL4_OFFSETOF(plic_t, hart_regs[1]));
 
 
-#define PLIC_HART_ID (CONFIG_FIRST_HART_ID)
-
-#define PLIC_PRIO               0x0
-#define PLIC_PRIO_PER_ID        0x4
-
-#define PLIC_PENDING            0x1000
-#define PLIC_EN                 0x2000
-#define PLIC_EN_PER_HART        0x100
-#define PLIC_EN_PER_CONTEXT     0x80
-
-
-#define PLIC_THRES              0x200000
-#define PLIC_SVC_CONTEXT        1
-#define PLIC_THRES_PER_HART     0x2000
-#define PLIC_THRES_PER_CONTEXT  0x1000
-#define PLIC_THRES_CLAIM        0x4
-
-#define PLIC_NUM_INTERRUPTS PLIC_MAX_IRQ
-
-#if defined(CONFIG_PLAT_HIFIVE) || defined(CONFIG_PLAT_POLARFIRE)
-
-/* SiFive U54-MC has 5 cores, and the first core does not
- * have supervisor mode. Therefore, we need to compensate
- * for the addresses.
- */
-#define PLAT_PLIC_THRES_ADJUST(x) ((x) - PLIC_THRES_PER_CONTEXT)
-#define PLAT_PLIC_EN_ADJUST(x)    ((x) - PLIC_EN_PER_CONTEXT)
-
-#else
-
-#define PLAT_PLIC_THRES_ADJUST(x)   (x)
-#define PLAT_PLIC_EN_ADJUST(x)      (x)
-
-#endif
-
-
-
-static inline uint32_t readl(uint64_t addr)
+static inline int plic_get_current_hart_s_mode_idx(void)
 {
-    return *((volatile uint32_t *)(addr));
-}
+    word_t hart_id = SMP_TERNARY(cpuIndexToID(getCurrentCPUIndex()),
+                                 CONFIG_FIRST_HART_ID);
 
-static inline void writel(uint32_t val, uint64_t addr)
-{
-    *((volatile uint32_t *)(addr)) = val;
-}
-
-static inline word_t plic_enable_offset(word_t hart_id, word_t context_id)
-{
-    word_t addr = PLAT_PLIC_EN_ADJUST(PLIC_EN + hart_id * PLIC_EN_PER_HART + context_id * PLIC_EN_PER_CONTEXT);
-    return addr;
-}
-
-
-static inline word_t plic_thres_offset(word_t hart_id, word_t context_id)
-{
-    word_t addr = PLAT_PLIC_THRES_ADJUST(PLIC_THRES + hart_id * PLIC_THRES_PER_HART + context_id * PLIC_THRES_PER_CONTEXT);
-    return addr;
-}
-
-static inline word_t plic_claim_offset(word_t hart_id, word_t context_id)
-{
-    word_t addr = plic_thres_offset(hart_id, context_id) + PLIC_THRES_CLAIM;
-    return addr;
-}
-
-static inline bool_t plic_pending_interrupt(word_t interrupt)
-{
-    word_t addr = PLIC_PPTR_BASE + PLIC_PENDING + (interrupt / 32) * 4;
-    word_t bit = interrupt % 32;
-    if (readl(addr) & BIT(bit)) {
-        return true;
-    } else {
-        return false;
+    /* Get the S-Mode register bank index for the current core. Core 0 only has
+     * only M-Mode, Cores 1-4 have both M-Mode and S-Mode.
+     */
+    if (unlikely((hart_id < 1) || (hart_id > 4))) {
+        printf("ERROR: invalid hart id %"SEL4_PRIu_word"\n", hart_id);
+        halt();
+        UNREACHABLE();
     }
-}
 
-/* The PLIC has separate register sets for each hart and the hart's context.
- * This returns the hart ID used by the PLIC for the hart this code is currently
- * executing on.
- */
-static inline word_t plic_get_current_hart_id(void)
-{
-    return SMP_TERNARY(
-               cpuIndexToID(getCurrentCPUIndex()),
-               CONFIG_FIRST_HART_ID);
+    return 2 * hart_id;
 }
 
 static inline irq_t plic_get_claim(void)
 {
+    plic_t * const plic = ((plic_t *)PLIC_PPTR);
+    word_t idx = plic_get_current_hart_s_mode_idx();
+    assert(idx < ARRAY_SIZE(plic->hart_regs));
+
     /* Read the claim register for our HART interrupt context */
-    word_t hart_id = plic_get_current_hart_id();
-    return readl(PLIC_PPTR_BASE + plic_claim_offset(hart_id, PLIC_SVC_CONTEXT));
+    return plic->hart_regs[idx].claim;
 }
 
 static inline void plic_complete_claim(irq_t irq)
 {
+    plic_t * const plic = ((plic_t *)PLIC_PPTR);
+    word_t idx = plic_get_current_hart_s_mode_idx();
+    assert(idx < ARRAY_SIZE(plic->hart_regs));
+
     /* Complete the IRQ claim by writing back to the claim register. */
-    word_t hart_id = plic_get_current_hart_id();
-    writel(irq, PLIC_PPTR_BASE + plic_claim_offset(hart_id, PLIC_SVC_CONTEXT));
+    plic->hart_regs[idx].claim = irq;
 }
 
 static inline void plic_mask_irq(bool_t disable, irq_t irq)
 {
-    uint64_t addr = 0;
-    uint32_t val = 0;
-    uint32_t bit = 0;
+    plic_t * const plic = (plic_t *)PLIC_PPTR;
 
-    word_t hart_id = plic_get_current_hart_id();
-    addr = PLIC_PPTR_BASE + plic_enable_offset(hart_id, PLIC_SVC_CONTEXT) + (irq / 32) * 4;
-    bit = irq % 32;
+    /* The threshold is configured to 0, thus setting priority 0 masks an
+     * interrupt and setting 1 will unmask it.
+     */
+    plic->priority[irq] = disable ? 0 : 1;
+}
 
-    val = readl(addr);
-    if (disable) {
-        val &= ~BIT(bit);
+static inline void plic_enable_irq(bool_t enable, irq_t irq)
+{
+    plic_t * const plic = (plic_t *)PLIC_PPTR;
+    word_t idx = plic_get_current_hart_s_mode_idx();
+    assert(idx < ARRAY_SIZE(plic->hart_enable));
+
+    uint32_t mask = BIT(irq % 32);
+    volatile uint32_t * const reg = &plic->hart_enable[idx].enable[irq / 32];
+    if (enable) {
+        *reg |= mask;
     } else {
-        val |= BIT(bit);
+        *reg &= ~mask;
     }
-    writel(val, addr);
 }
 
 static inline void plic_init_hart(void)
 {
+    plic_t * const plic = (plic_t *)PLIC_PPTR;
+    word_t idx = plic_get_current_hart_s_mode_idx();
+    assert(idx < ARRAY_SIZE(plic->hart_regs));
 
-    word_t hart_id = plic_get_current_hart_id();
-
-    for (int i = 1; i <= PLIC_NUM_INTERRUPTS; i++) {
-        /* Disable interrupts */
-        plic_mask_irq(true, i);
-    }
-
-    /* Set threshold to zero */
-    writel(0, (PLIC_PPTR_BASE + plic_thres_offset(hart_id, PLIC_SVC_CONTEXT)));
+    /* Set threshold to 0, this masks all interrupts with priority 0. */
+    plic->hart_regs[idx].threshold = 0;
 }
 
 static inline void plic_init_controller(void)
 {
+    plic_t * const plic = (plic_t *)PLIC_PPTR;
 
-    for (int i = 1; i <= PLIC_NUM_INTERRUPTS; i++) {
-        /* Clear all pending bits */
-        if (plic_pending_interrupt(i)) {
-            readl(PLIC_PPTR_BASE + plic_claim_offset(PLIC_HART_ID, PLIC_SVC_CONTEXT));
-            writel(i, PLIC_PPTR_BASE + plic_claim_offset(PLIC_HART_ID, PLIC_SVC_CONTEXT));
+    /* Set the priority of each interrupt to 0, then enable it. The priority of
+     * 0 masks it. Interrupt 0 is a dummy, interrupts 1 to PLIC_MAX_IRQ the the
+     * real interrupts that need to be configured.
+     */
+    for (word_t irq = 1; irq <= PLIC_MAX_IRQ; irq++) {
+        plic->priority[irq] = 0;
+        plic_enable_irq(true, irq);
+    }
+
+    /* Now that all interrupts are masked, clean any that are still pending. */
+    for (;;) {
+        uint32_t irq = plic_get_claim();
+        if (0 == irq) {
+            break;
         }
+        plic_complete_claim(irq);
     }
-
-    /* Set the priorities of all interrupts to 1 */
-    for (int i = 1; i <= PLIC_MAX_IRQ + 1; i++) {
-        writel(2, PLIC_PPTR_BASE + PLIC_PRIO + PLIC_PRIO_PER_ID * i);
-    }
-
-}
-
-
-/*
- * Provide a dummy definition of set trigger as the Hifive platform currently
- * has all global interrupt positive-level triggered.
- */
-static inline void plic_irq_set_trigger(irq_t irq, bool_t edge_triggered)
-{
 }
