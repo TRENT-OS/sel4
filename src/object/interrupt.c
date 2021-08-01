@@ -266,5 +266,6 @@ void setIRQState(irq_state_t irqState, irq_t irq)
         return;
     }
 #endif
+    // printf("setIRQState() for IRQ: %lu\n", irq);
     maskInterrupt(irqState == IRQInactive, irq);
 }

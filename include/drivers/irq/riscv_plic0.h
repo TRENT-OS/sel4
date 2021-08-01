@@ -129,7 +129,15 @@ static inline void plic_complete_claim(irq_t irq)
     assert(idx < ARRAY_SIZE(plic->hart_regs));
 
     /* Complete the IRQ claim by writing back to the claim register. */
+    // uint32_t pre[2] = { plic->pending[0], plic->pending[1] };
     plic->hart_regs[idx].claim = irq;
+    // uint32_t post[2] = { plic->pending[0], plic->pending[1] };
+    // if (pre[0] | pre[1] | post[0] | post[1]) {
+    //     printf("plic_complete_claim() irq %d, pre %04x'%04x'%04x'%04x, post %04x'%04x'%04x'%04x\n",
+    //         (int)irq,
+    //         pre[1] >> 16, pre[1] & 0xffff, pre[0] >> 16,  pre[0] & 0xffff,
+    //         post[1] >> 16, post[1] & 0xffff, post[0] >> 16,  post[0] & 0xffff);
+    // }
 }
 
 static inline void plic_mask_irq(bool_t disable, irq_t irq)
@@ -139,11 +147,20 @@ static inline void plic_mask_irq(bool_t disable, irq_t irq)
     /* The threshold is configured to 0, thus setting priority 0 masks an
      * interrupt and setting 1 will unmask it.
      */
+    // uint32_t pre[2] = { plic->pending[0], plic->pending[1] };
     plic->priority[irq] = disable ? 0 : 1;
+    // uint32_t post[2] = { plic->pending[0], plic->pending[1] };
+    // if (pre[0] | pre[1] | post[0] | post[1]) {
+    //     printf("%smask irq %d, pre %04x'%04x%04x%04x, post %04x'%04x%04x%04x\n",
+    //            disable?"":"un", (int)irq,
+    //         pre[1] >> 16, pre[1] & 0xffff, pre[0] >> 16,  pre[0] & 0xffff,
+    //         post[1] >> 16, post[1] & 0xffff, post[0] >> 16,  post[0] & 0xffff);
+    // }
 }
 
 static inline void plic_enable_irq(bool_t enable, irq_t irq)
 {
+    printf("%sable irq %d\n", enable?"en":"dis", (int)irq);
     plic_t * const plic = (plic_t *)PLIC_PPTR;
     word_t idx = plic_get_current_hart_s_mode_idx();
     assert(idx < ARRAY_SIZE(plic->hart_enable));
@@ -169,6 +186,8 @@ static inline void plic_init_hart(void)
 
 static inline void plic_init_controller(void)
 {
+    printf("init PLIC, interrupts 1 - %d\n", PLIC_MAX_IRQ);
+
     plic_t * const plic = (plic_t *)PLIC_PPTR;
 
     /* Set the priority of each interrupt to 0, then enable it. The priority of
@@ -186,6 +205,7 @@ static inline void plic_init_controller(void)
         if (0 == irq) {
             break;
         }
+        printf("drop pending interrupt %d\n", irq);
         plic_complete_claim(irq);
     }
 }

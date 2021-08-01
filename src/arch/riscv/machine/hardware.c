@@ -88,6 +88,7 @@ static inline irq_t getActiveIRQ(void)
     /* If an interrupt is currently active, then return it. */
     irq_t irq = *active_irq_slot;
     if (IS_IRQ_VALID(irq)) {
+        printf("getActiveIRQ() report active irq %d\n", (int)irq);
         return irq;
     }
 
@@ -102,6 +103,7 @@ static inline irq_t getActiveIRQ(void)
          * has claimed it in a multicore system.
          */
         irq = plic_get_claim();
+        // printf("getActiveIRQ() claimed %d\n", (int)irq);
 #ifdef ENABLE_SMP_SUPPORT
     } else if (sip & BIT(SIP_SSIP)) {
         sbi_clear_ipi();
@@ -114,6 +116,7 @@ static inline irq_t getActiveIRQ(void)
          * happen if e.g. if another hart context has claimed the interrupt
          * already.
          */
+        printf("getActiveIRQ() unknown irq\n");
         irq = irqInvalid;
     }
 
@@ -185,6 +188,7 @@ static inline void maskInterrupt(bool_t disable, irq_t irq)
         return;
 #endif
     } else {
+        // printf("maskInterrupt() %smask irq = %d\n", disable ? "" : "un", (int)irq);
         plic_mask_irq(disable, irq);
     }
 }
@@ -213,6 +217,7 @@ static inline void ackInterrupt(irq_t irq)
     }
 
     plic_complete_claim(irq);
+    // printf("ackInterrupt() completed irq %d\n", (int)irq);
 
 #ifdef ENABLE_SMP_SUPPORT
     if (irq == irq_reschedule_ipi || irq == irq_remote_call_ipi) {
