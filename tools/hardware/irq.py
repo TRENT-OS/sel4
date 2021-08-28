@@ -186,7 +186,11 @@ CONTROLLERS = {
     'ti,am33xx-intc': RawIrqController,
     'ti,omap3-intc': RawIrqController,
     'riscv,cpu-intc': RawIrqController,
-    'riscv,plic0': RawIrqController,
+    ##### 
+    ##### ToDo: seems we do not need the PLIC - and if we don't need the 
+    #####       PLIC on HiFive, we should not need it on MiG-V either.
+    # 'riscv,plic0': RawIrqController,
+    # 'migv-1.0,plic': RawIrqController,
 }
 
 

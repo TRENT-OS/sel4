@@ -177,6 +177,12 @@ devices:
       - index: 0
         kernel: WDT1_PPTR
         user: true
+  # HC MiG-V Timer
+  - compatible:
+      - hc,migv-timer
+    regions:
+      - index: 0
+        kernel: TIMER_PPTR
   # various serial consoles (`grep <compatible> serial/*`)
   - compatible:
       - amlogic,meson-gx-uart
