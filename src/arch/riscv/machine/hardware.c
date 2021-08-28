@@ -202,12 +202,18 @@ static inline void maskInterrupt(bool_t disable, irq_t irq)
 static inline void ackInterrupt(irq_t irq)
 {
     assert(IS_IRQ_VALID(irq));
+    assert(IS_IRQ_VALID(active_irq[CURRENT_CPU_INDEX()]));
+    assert(active_irq[CURRENT_CPU_INDEX()] == irq);
+
     active_irq[CURRENT_CPU_INDEX()] = irqInvalid;
 
     if (irq == KERNEL_TIMER_IRQ) {
         /* Reprogramming the timer has cleared the interrupt. */
         return;
     }
+
+    plic_complete_claim(irq);
+
 #ifdef ENABLE_SMP_SUPPORT
     if (irq == irq_reschedule_ipi || irq == irq_remote_call_ipi) {
         ipi_clear_irq(irq);
@@ -266,6 +272,5 @@ BOOT_CODE void initIRQController(void)
 
 static inline void handleSpuriousIRQ(void)
 {
-    /* Do nothing */
-    printf("Superior IRQ!! SIP %lx\n", read_sip());
+    /* no special handling necessary */
 }
