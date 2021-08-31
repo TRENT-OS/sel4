@@ -52,15 +52,27 @@ static inline void plic_mask_irq(bool_t disable, irq_t irq)
     /* Interrupt 0 is only used to indicate "not interrupt pending, thus it
      * does not exist in the mask register.
      */
+
+    if (irq > 0) {
+        int value = disable ? 1 : 2;
+        MIGV_PLIC->priority[(irq-1)/8] = value << (((irq-1)%8)*4);
+    }
+}
+
+static inline void plic_enable_irq(bool_t enable, irq_t irq)
+{
+    /* Interrupt 0 is only used to indicate "not interrupt pending, thus it
+     * does not exist in the mask register.
+     */
     if (irq > 0)
     {
         uint32_t mask = BIT(irq - 1);
         volatile uint32_t *reg = &MIGV_PLIC->ie_target[MIGV_PLIC_TARGET_S_MODE];
 
-        if(disable) {
-            *reg &= ~mask; /* clear */
-        } else {
+        if(enable) {
             *reg |= mask; /* set */
+        } else {
+            *reg &= ~mask; /* clear */
         }
     }
 }
@@ -94,14 +106,20 @@ static inline void plic_init_controller(void)
      * cannot be masked. Mask interrupts 1 to PLIC_MAX_IRQ
      */
     for (word_t i = 1; i <= PLIC_MAX_IRQ; i++) {
-        plic_mask_irq(true, i);
+        plic_enable_irq(true, i);
     }
-    /* Set all interrupt to priority 1 by default. */
+    /* Set all interrupt to priority 2 by default. */
     for (word_t i = 0; i < ARRAY_SIZE(MIGV_PLIC->priority); i++) {
-        MIGV_PLIC->priority[i] = 0x11111111;
+        MIGV_PLIC->priority[i] = 0x22222222;
     }
     /* Make all interrupts edge-triggered by default. */
     MIGV_PLIC->trigger_mode = 0xFFFFFFFF;
-    /* Disable threshold. */
-    MIGV_PLIC->threshold[MIGV_PLIC_TARGET_S_MODE] = 0;
+
+    // plic_irq_set_trigger(10, false); // set UART to level triggered
+    // plic_irq_set_trigger(11, false); // set UART to level triggered
+
+    /* As setting threshold to 0 means that no interrupts will be masked,
+     * we have to set threshold to 1. This masks all interrupts with priority lower or equal than 1.
+     */
+    MIGV_PLIC->threshold[MIGV_PLIC_TARGET_S_MODE] = 1;
 }
