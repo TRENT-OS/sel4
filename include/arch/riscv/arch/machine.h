@@ -46,6 +46,21 @@
 #define SIE_MEIE  11 /* M-Mode external interrupt enable (MIP only). */
 /* Bit 12 and above are reserved. */
 
+static inline void ifence_local(void)
+{
+    asm volatile("fence.i":::"memory");
+}
+
+static inline void sfence_local(void)
+{
+    asm volatile("sfence.vma" ::: "memory");
+}
+
+static inline void hwASIDFlush_local(asid_t asid)
+{
+    asm volatile("sfence.vma x0, %0" :: "r"(asid): "memory");
+}
+
 #ifdef ENABLE_SMP_SUPPORT
 
 static inline void fence_rw_rw(void)
@@ -68,16 +83,6 @@ static inline void fence_w_r(void)
     asm volatile("fence w,r" ::: "memory");
 }
 
-static inline void ifence_local(void)
-{
-    asm volatile("fence.i":::"memory");
-}
-
-static inline void sfence_local(void)
-{
-    asm volatile("sfence.vma" ::: "memory");
-}
-
 static inline word_t get_sbi_mask_for_all_remote_harts(void)
 {
     word_t mask = 0;
@@ -89,46 +94,29 @@ static inline word_t get_sbi_mask_for_all_remote_harts(void)
     return mask;
 }
 
+#endif /* ENABLE_SMP_SUPPORT */
+
 static inline void ifence(void)
 {
     ifence_local();
-    word_t mask = get_sbi_mask_for_all_remote_harts();
-    sbi_remote_fence_i(mask);
+    SMP_COND_STATEMENT(sbi_remote_fence_i(get_sbi_mask_for_all_remote_harts()));
 }
 
 static inline void sfence(void)
 {
-    fence_w_rw();
+    SMP_COND_STATEMENT(fence_w_rw());
     sfence_local();
-    word_t mask = get_sbi_mask_for_all_remote_harts();
-    sbi_remote_sfence_vma(mask, 0, 0);
-}
-
-static inline void hwASIDFlushLocal(asid_t asid)
-{
-    asm volatile("sfence.vma x0, %0" :: "r"(asid): "memory");
+    SMP_COND_STATEMENT(
+        sbi_remote_sfence_vma(get_sbi_mask_for_all_remote_harts(), 0, 0));
 }
 
 static inline void hwASIDFlush(asid_t asid)
 {
-    hwASIDFlushLocal(asid);
-    word_t mask = get_sbi_mask_for_all_remote_harts();
-    sbi_remote_sfence_vma_asid(mask, 0, 0, asid);
+    hwASIDFlush_local(asid);
+    SMP_COND_STATEMENT(
+        sbi_remote_sfence_vma_asid(get_sbi_mask_for_all_remote_harts(), 0, 0,
+                                   asid));
 }
-
-#else
-
-static inline void sfence(void)
-{
-    asm volatile("sfence.vma" ::: "memory");
-}
-
-static inline void hwASIDFlush(asid_t asid)
-{
-    asm volatile("sfence.vma x0, %0" :: "r"(asid): "memory");
-}
-
-#endif /* end of !ENABLE_SMP_SUPPORT */
 
 word_t PURE getRestartPC(tcb_t *thread);
 void setNextPC(tcb_t *thread, word_t v);
@@ -240,11 +228,7 @@ static inline void setVSpaceRoot(paddr_t addr, asid_t asid)
     write_satp(satp.words[0]);
 
     /* Order read/write operations */
-#ifdef ENABLE_SMP_SUPPORT
     sfence_local();
-#else
-    sfence();
-#endif
 }
 
 void map_kernel_devices(void);
