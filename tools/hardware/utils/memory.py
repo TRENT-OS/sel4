@@ -88,15 +88,6 @@ def get_phys_mem_regions(tree: FdtParser, hw_yaml: HardwareYaml) \
                 for r in tree_reserved_regs:
                     mem_regions = carve_out_region(mem_regions, r)
 
-    # Check config for memory alignment and reservation needs. Needs to be done
-    # after we have removed the reserved region from the device tree, because we
-    # also get 'kernel_phys_base' here. And once we have that, the memory
-    # regions can't the modified any longer.
-    cfg_reserved_regs, kernel_phys_base = hw_yaml.config.align_memory(mem_regions)
-    for r in cfg_reserved_regs:
-        mem_regions = carve_out_region(mem_regions, r)
-    reserved_regions.update(cfg_reserved_regs)
-
     # Merge adjacent regions and create a properly ordered list from the sets.
     mem_region_list = sorted(merge_regions(mem_regions),
                              key=lambda r: r.base)
@@ -129,4 +120,4 @@ def get_phys_mem_regions(tree: FdtParser, hw_yaml: HardwareYaml) \
     # create a properly ordered list from the set or regions
     dev_region_list = sorted(all_regions, key=lambda r: r.base)
 
-    return mem_region_list, dev_region_list, kernel_phys_base
+    return mem_region_list, reserved_region_list, dev_region_list

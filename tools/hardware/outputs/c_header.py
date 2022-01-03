@@ -27,7 +27,7 @@ HEADER_TEMPLATE = '''/*
 
 #pragma once
 
-#define physBase {{ "0x{:x}".format(physBase) }}
+#define physBase {{ "0x{:x}".format(kernel_phy_base) }}
 
 #ifndef __ASSEMBLER__
 
@@ -105,13 +105,34 @@ static const kernel_frame_t BOOT_RODATA *const kernel_device_frames = NULL;
 /* PHYSICAL MEMORY */
 static const p_region_t BOOT_RODATA avail_p_regs[] = {
     {% for reg in physical_memory %}
-    /* {{ reg.owner.path }} */
+    /* from {{ reg.owner.path }} */
     {
         .start = {{ "0x{:x}".format(reg.base) }},
         .end   = {{ "0x{:x}".format(reg.base + reg.size) }}
     },
     {% endfor %}
 };
+
+/* RESERVED REGIONS */
+{% if len(reserved_regions) > 0 %}
+static const p_region_t BOOT_RODATA reserved_p_regs[] = {
+    {% for reg in reserved_regions %}
+    /* from {{ reg.owner.path }} */
+    {
+        .start = {{ "0x{:x}".format(reg.base) }},
+        .end   = {{ "0x{:x}".format(reg.base + reg.size) }}
+    },
+    {% endfor %}
+};
+
+#define NUM_RESERVED_PHYS_MEM_REGIONS ARRAY_SIZE(reserved_p_regs)
+{% else %}
+/* The C parser used for formal verification process follows strict C rules,
+ * which do not allow empty arrays. Thus this is defined as NULL.
+ */
+static const p_region_t BOOT_RODATA *const reserved_p_regs = NULL;
+#define NUM_RESERVED_PHYS_MEM_REGIONS 0
+{% endif %}
 
 #endif /* !__ASSEMBLER__ */
 
@@ -121,8 +142,10 @@ static const p_region_t BOOT_RODATA avail_p_regs[] = {
 def create_c_header_file(hw_yaml: HardwareYaml,
                          kernel_irqs: List[KernelInterrupt],
                          kernel_dev_addr_macros: Dict[str, int],
-                         kernel_regions: List[Region], physBase: int,
-                         physical_memory: List[Region], outputStream):
+                         kernel_regions: List[Region], kernel_phy_base: int,
+                         physical_memory: List[Region],
+                         reserved_regions: List[Region],
+                         outputStream):
     jinja_env = jinja2.Environment(loader=jinja2.BaseLoader, trim_blocks=True,
                                    lstrip_blocks=True)
 
@@ -134,8 +157,9 @@ def create_c_header_file(hw_yaml: HardwareYaml,
             'kernel_irqs': kernel_irqs,
             'kernel_dev_addr_macros': kernel_dev_addr_macros,
             'kernel_regions': kernel_regions,
-            'physBase': physBase,
-            'physical_memory': physical_memory})
+            'kernel_phy_base': kernel_phy_base,
+            'physical_memory': physical_memory,
+            'reserved_regions': reserved_regions})
     data = template.render(template_args)
 
     with outputStream:
@@ -146,12 +170,31 @@ def run(tree: FdtParser, hw_yaml: HardwareYaml, args: argparse.Namespace):
     if not args.header_out:
         raise ValueError('You need to specify a header-out to use c header output')
 
-    # We only care about the available physical memory and the kernel's phys
-    # base. The device memory regions are not relevant here.
-    physical_memory, _, physBase = hardware.utils.memory.get_phys_mem_regions(tree,
-                                                                              hw_yaml)
+    # We only care about the available physical memory. The device memory
+    # regions are not relevant here.
+    physical_memory, reserved_regions, _ = \
+        hardware.utils.memory.get_phys_mem_regions(tree, hw_yaml)
 
-    # Collect the interrupts and kernel regions for the devices.
+    # By convention, the first region holds the kernel image. But there is no
+    # strict requirement that it must be in the first region, any region would
+    # do. An exception is thrown if the region is too small to satisfy the
+    # kernel's alignment requirement. Currently there is no solution for this,
+    # so this must be solved by the first platform that runs into this problem.
+    # During the boot process, the kernel will mark its own memory as reserved,
+    # so there is no need to split the region here in a part before the kernel
+    # and a part that has the kernel in the beginning.
+    # Unfortunately, we do not know the kernel size here, so there is no
+    # guarantee the kernel really fits into that region. For now, we leave this
+    # issue to be resolved by the boot flow. Loading the ELF loader will fail
+    # anyway if there is not enough space.
+    reg = physical_memory[0]
+    kernel_phys_align = hw_yaml.config.get_kernel_phys_align()
+    kernel_phy_base = reg.base if kernel_phys_align == 0 \
+        else reg.align_base(kernel_phys_align).base
+
+    # Build a set or irqs and list of KernelRegionGroups, where each element
+    # represents a single contiguous region of memory that is associated with a
+    # device.
     kernel_irq_dict = {}  # dict of 'label:irq_obj'
     kernel_regions = []  # list of Regions.
     for dev in tree.get_kernel_devices():
@@ -191,8 +234,9 @@ def run(tree: FdtParser, hw_yaml: HardwareYaml, args: argparse.Namespace):
         sorted(kernel_irq_dict.values(), key=lambda irq: irq.label),
         sorted(kernel_dev_addr_macros.items(), key=lambda tupel: tupel[1]),
         kernel_regions,
-        physBase,
+        kernel_phy_base,
         physical_memory,
+        reserved_regions,
         args.header_out)
 
 
