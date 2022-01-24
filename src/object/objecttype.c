@@ -541,6 +541,7 @@ cap_t createObject(object_t t, void *regionBase, word_t userSize, bool_t deviceM
         tcbDebugAppend(tcb);
 #endif /* CONFIG_DEBUG_BUILD */
 
+        printf("createObject: created TCB %lx\n", TCB_REF(tcb));
         return cap_thread_cap_new(TCB_REF(tcb));
     }
 

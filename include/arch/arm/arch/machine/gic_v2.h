@@ -295,6 +295,9 @@ static inline virq_t get_gic_vcpu_ctrl_lr(int num)
 
 static inline void set_gic_vcpu_ctrl_lr(int num, virq_t lr)
 {
+  virq_t old_virq = get_gic_vcpu_ctrl_lr(num);
+    printf("set_gic_vcpu_ctrl_lr idx=%d %llx->%llx\n", num,
+     virq_get_virqType(old_virq), virq_get_virqType(lr));
     gic_vcpu_ctrl->lr[num] = lr.words[0];
 }
 

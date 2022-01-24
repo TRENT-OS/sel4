@@ -256,6 +256,8 @@ exception_t handleVMFaultEvent(vm_fault_type_t vm_faultType)
     return EXCEPTION_NONE;
 }
 
+cptr_t syscall_cptr;
+
 #ifdef CONFIG_KERNEL_MCS
 static exception_t handleInvocation(bool_t isCall, bool_t isBlocking, bool_t canDonate, bool_t firstPhase, cptr_t cptr)
 #else
@@ -274,6 +276,7 @@ static exception_t handleInvocation(bool_t isCall, bool_t isBlocking)
     info = messageInfoFromWord(getRegister(thread, msgInfoRegister));
 #ifndef CONFIG_KERNEL_MCS
     cptr_t cptr = getRegister(thread, capRegister);
+    syscall_cptr = cptr;
 #endif
 
     /* faulting section */

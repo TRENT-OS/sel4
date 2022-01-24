@@ -165,6 +165,8 @@ void VGICMaintenance(void)
     eisr1 = get_gic_vcpu_ctrl_eisr1();
     flags = get_gic_vcpu_ctrl_misr();
 
+    printf("VGICMaintenance interrupt, VGIC_MISR_EOI=%x\n", flags & VGIC_MISR_EOI);
+
     if (flags & VGIC_MISR_EOI) {
         int irq_idx;
         if (eisr0) {
@@ -231,6 +233,7 @@ void vcpu_init(vcpu_t *vcpu)
 
 void vcpu_switch(vcpu_t *new)
 {
+    //printf("vcpu_switch, new=%p\n", new);
     if (likely(ARCH_NODE_STATE(armHSCurVCPU) != new)) {
         if (unlikely(new != NULL)) {
             if (unlikely(ARCH_NODE_STATE(armHSCurVCPU) != NULL)) {
@@ -310,6 +313,8 @@ void dissociateVCPUTCB(vcpu_t *vcpu, tcb_t *tcb)
 
 exception_t invokeVCPUWriteReg(vcpu_t *vcpu, word_t field, word_t value)
 {
+    printf("invokeVCPUWriteReg vcpu=%p, tcb=%p, field=%lx, val=%lx\n",
+         vcpu, vcpu->vcpuTCB, field, value);
     writeVCPUReg(vcpu, field, value);
     return EXCEPTION_NONE;
 }
@@ -375,6 +380,8 @@ exception_t decodeVCPUReadReg(cap_t cap, unsigned int length, bool_t call, word_
 
 exception_t invokeVCPUInjectIRQ(vcpu_t *vcpu, unsigned long index, virq_t virq)
 {
+
+    printf("invokeVCPUInjectIRQ vcpu=%p, tcb=%p, index=%ld, virq=%llx\n", vcpu, vcpu->vcpuTCB, index, virq.words[0]);
     if (likely(ARCH_NODE_STATE(armHSCurVCPU) == vcpu)) {
         set_gic_vcpu_ctrl_lr(index, virq);
 #ifdef ENABLE_SMP_SUPPORT
@@ -529,6 +536,7 @@ exception_t decodeVCPUAckVPPI(cap_t cap, unsigned int length, word_t *buffer)
 
 exception_t invokeVCPUAckVPPI(vcpu_t *vcpu, VPPIEventIRQ_t vppi)
 {
+    printf("invokeVCPUAckVPPI vcpu=%p, tcb=%p, vppi=%ld\n", vcpu, vcpu->vcpuTCB, vppi);
     vcpu->vppi_masked[vppi] = false;
     return EXCEPTION_NONE;
 }
@@ -563,6 +571,22 @@ exception_t invokeVCPUSetTCB(vcpu_t *vcpu, tcb_t *tcb)
 
 void handleVCPUFault(word_t hsr)
 {
+    tcb_t *current = NODE_STATE(ksCurThread);
+    arch_tcb_t *tcbArch = &current->tcbArch;
+    user_context_t *tcbContext = &tcbArch->tcbContext;
+    if (tcbArch->tcbVCPU != NULL) {
+      printf("Fault PC=%lx:%lx elr_el2=%lx spsr_el2=%lx\n",
+          tcbContext->registers[NextIP], tcbContext->registers[FaultIP],
+          tcbContext->registers[ELR_EL1],
+          tcbContext->registers[SPSR_EL1]);
+      printf("  sctlr_el1=%lx, elr_el1=%lx, spsr_el1=%lx, vbar=%lx\n",
+        tcbArch->tcbVCPU->regs[seL4_VCPUReg_SCTLR],
+        tcbArch->tcbVCPU->regs[seL4_VCPUReg_ELR_EL1],
+        tcbArch->tcbVCPU->regs[seL4_VCPUReg_SPSR_EL1],
+        tcbArch->tcbVCPU->regs[seL4_VCPUReg_VBAR]);
+
+    }
+
     MCS_DO_IF_BUDGET({
         if (armv_handleVCPUFault(hsr))
         {

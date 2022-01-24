@@ -68,6 +68,15 @@ exception_t sendFaultIPC(tcb_t *tptr)
     lookupCap_ret_t lu_ret;
     lookup_fault_t original_lookup_fault;
 
+    tcb_t *current = NODE_STATE(ksCurThread);
+    arch_tcb_t *tcbArch = &current->tcbArch;
+    user_context_t *tcbContext = &tcbArch->tcbContext;
+    if (tcbArch->tcbVCPU != NULL) {
+      printf("sendFaultIPC tcb=%p PC=%lx:%lx\n", tptr, tcbContext->registers[NextIP], tcbContext->registers[FaultIP]);
+    }
+
+
+
     original_lookup_fault = current_lookup_fault;
 
     handlerCPtr = tptr->tcbFaultHandler;

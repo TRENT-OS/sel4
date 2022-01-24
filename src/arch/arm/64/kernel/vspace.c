@@ -945,9 +945,15 @@ static pude_t makeUser1stLevel(paddr_t paddr, vm_rights_t vm_rights, vm_attribut
 #define GET_PAR_ADDR(x) ((x) & PAR_EL1_MASK)
 exception_t handleVMFault(tcb_t *thread, vm_fault_type_t vm_faultType)
 {
+    tcb_t *current = NODE_STATE(ksCurThread);
+    arch_tcb_t *tcbArch = &current->tcbArch;
+    user_context_t *tcbContext = &tcbArch->tcbContext;
+
     switch (vm_faultType) {
     case ARMDataAbort: {
         word_t addr, fault;
+
+
 
         addr = getFAR();
         fault = getDFSR();
@@ -958,6 +964,12 @@ exception_t handleVMFault(tcb_t *thread, vm_fault_type_t vm_faultType)
             addr = GET_PAR_ADDR(addressTranslateS1(addr)) | (addr & MASK(PAGE_BITS));
         }
 #endif
+         if (tcbArch->tcbVCPU != NULL) {
+           printf("handleVMFault data abort PC=%lx:%lx, addr=%lx, fault=%lx\n",
+           tcbContext->registers[NextIP], tcbContext->registers[FaultIP], addr, fault);
+         }
+
+
         current_fault = seL4_Fault_VMFault_new(addr, fault, false);
         return EXCEPTION_FAULT;
     }
@@ -973,6 +985,12 @@ exception_t handleVMFault(tcb_t *thread, vm_fault_type_t vm_faultType)
             pc = GET_PAR_ADDR(addressTranslateS1(pc)) | (pc & MASK(PAGE_BITS));
         }
 #endif
+         if (tcbArch->tcbVCPU != NULL) {
+           printf("handleVMFault prefetch abort PC=%lx:%lx, pc=%lx, fault=%lx\n",
+           tcbContext->registers[NextIP], tcbContext->registers[FaultIP], pc, fault);
+         }
+
+
         current_fault = seL4_Fault_VMFault_new(pc, fault, true);
         return EXCEPTION_FAULT;
     }

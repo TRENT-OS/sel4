@@ -1999,6 +1999,12 @@ exception_t invokeTCB_WriteRegisters(tcb_t *dest, bool_t resumeTarget,
     exception_t e;
     bool_t archInfo;
 
+    if (dest->tcbArch.tcbVCPU != NULL) {
+      printf("invokeTCB_WriteRegisters %p old pc: %lx:%lx\n",
+         dest, dest->tcbArch.tcbContext.registers[NextIP],dest->tcbArch.tcbContext.registers[FaultIP]);
+    }
+
+
     e = Arch_performTransfer(arch, NODE_STATE(ksCurThread), dest);
     if (e != EXCEPTION_NONE) {
         return e;
@@ -2026,6 +2032,12 @@ exception_t invokeTCB_WriteRegisters(tcb_t *dest, bool_t resumeTarget,
 
     pc = getRestartPC(dest);
     setNextPC(dest, pc);
+
+    if (dest->tcbArch.tcbVCPU != NULL) {
+      printf("invokeTCB_WriteRegisters %p new pc: %lx:%lx\n",
+         dest, dest->tcbArch.tcbContext.registers[NextIP],dest->tcbArch.tcbContext.registers[FaultIP]);
+    }
+
 
     Arch_postModifyRegisters(dest);
 

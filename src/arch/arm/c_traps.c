@@ -190,6 +190,7 @@ VISIBLE NORETURN void c_handle_vcpu_fault(word_t hsr)
     ksKernelEntry.path = Entry_VCPUFault;
     ksKernelEntry.word = hsr;
 #endif
+    //printf("c_handle_vcpu_fault hsr=%lx\n",hsr);
     handleVCPUFault(hsr);
     restore_user_context();
     UNREACHABLE();

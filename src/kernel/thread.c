@@ -453,6 +453,13 @@ void switchToThread(tcb_t *thread)
     Arch_switchToThread(thread);
     tcbSchedDequeue(thread);
     NODE_STATE(ksCurThread) = thread;
+    if (thread->tcbArch.tcbVCPU != NULL) {
+      printf("switchToThread %p, pc=%lx:%lx\n",
+          thread,
+          thread->tcbArch.tcbContext.registers[NextIP],
+          thread->tcbArch.tcbContext.registers[FaultIP]);
+
+    }
 }
 
 void switchToIdleThread(void)

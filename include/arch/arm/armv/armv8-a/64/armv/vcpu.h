@@ -590,6 +590,7 @@ static inline void armv_vcpu_save(vcpu_t *vcpu, UNUSED bool_t active)
 
 static inline void vcpu_enable(vcpu_t *vcpu)
 {
+    printf("vcpu_enable, vcpu=%p tcb=%p\n", vcpu, vcpu->vcpuTCB);
     vcpu_restore_reg(vcpu, seL4_VCPUReg_SCTLR);
     setHCR(HCR_VCPU);
     isb();
@@ -606,6 +607,7 @@ static inline void vcpu_disable(vcpu_t *vcpu)
 {
 
     uint32_t hcr;
+    printf("vcpu_disable ,vcpu=%p\n", vcpu);
     dsb();
     if (likely(vcpu)) {
         hcr = get_gic_vcpu_ctrl_hcr();

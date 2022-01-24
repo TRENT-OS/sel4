@@ -463,7 +463,17 @@ cap_t Arch_createObject(object_t t, void *regionBase, word_t userSize, bool_t de
         /** AUXUPD: "(True, ptr_retyp
           (Ptr (ptr_val \<acute>regionBase) :: vcpu_C ptr))" */
         vcpu_init(VCPU_PTR(regionBase));
+        //extern cptr syscall_cptr;
+        printf("Arch_createObject: created VCPU, %p, cptr=%lx\n",VCPU_PTR(regionBase), syscall_cptr );
+#if 0
         return cap_vcpu_cap_new(VCPU_REF(regionBase));
+#else
+        {
+          cap_t rv = cap_vcpu_cap_new(VCPU_REF(regionBase));
+          printf("Arch_createObject: created VCPU, cap=%llx:%llx\n", rv.words[0], rv.words[1]);
+          return rv;
+        };
+#endif
 #endif
 
     default:

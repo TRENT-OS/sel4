@@ -203,12 +203,14 @@ void handleInterrupt(irq_t irq)
         cap = intStateIRQNode[IRQT_TO_IDX(irq)].cap;
         if (cap_get_capType(cap) == cap_notification_cap &&
             cap_notification_cap_get_capNtfnCanSend(cap)) {
+                  printf("signal interrupt irq=%ld:%ld\n", irq, IRQT_TO_IDX(irq));
             sendSignal(NTFN_PTR(cap_notification_cap_get_capNtfnPtr(cap)),
                        cap_notification_cap_get_capNtfnBadge(cap));
         } else {
 #ifdef CONFIG_IRQ_REPORTING
             printf("Undelivered IRQ: %d\n", (int)IRQT_TO_IRQ(irq));
 #endif
+            printf("Undelivered IRQ: %d\n", (int)IRQT_TO_IRQ(irq));
         }
 #ifndef CONFIG_ARCH_RISCV
         maskInterrupt(true, irq);
