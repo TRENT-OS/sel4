@@ -13,10 +13,6 @@
 #include <arch/machine.h>
 #include <arch/smp/ipi.h>
 
-#ifndef CONFIG_KERNEL_MCS
-#define RESET_CYCLES ((TIMER_CLOCK_HZ / MS_IN_S) * CONFIG_TIMER_TICK_MS)
-#endif /* !CONFIG_KERNEL_MCS */
-
 #define IS_IRQ_VALID(X) (((X)) <= maxIRQ && (X) != irqInvalid)
 
 word_t PURE getRestartPC(tcb_t *thread)
@@ -218,13 +214,26 @@ static inline void ackInterrupt(irq_t irq)
 #ifndef CONFIG_KERNEL_MCS
 void resetTimer(void)
 {
-    uint64_t target;
-    // repeatedly try and set the timer in a loop as otherwise there is a race and we
-    // may set a timeout in the past, resulting in it never getting triggered
-    do {
-        target = riscv_read_time() + RESET_CYCLES;
+    // The time slice must be big enough that it is far in the future. If it is
+    // in the past, we never see a tick happen. Put a sanity check that detects
+    // if the time slice it too small. Abort immediately in debug builds to
+    // highlight there is a problem, retry once in releases builds assuming
+    // this is just a one-time issues.
+    const uint64_t tick = (TIMER_CLOCK_HZ / MS_IN_S) * CONFIG_TIMER_TICK_MS;
+
+    word_t cnt = 2
+    while (cnt-- > 0) {
+        uint64_t target = riscv_read_time() + tick
         sbi_set_timer(target);
-    } while (riscv_read_time() > target);
+        uint64_t now = riscv_read_time()
+        if (now < target) {
+            return;
+        }
+        printf("Could not set timer, %"PRIu64" >= %"PRIu64, now, target);
+        assert(0)
+    }
+
+    fail("Timer is broken");
 }
 
 /**
