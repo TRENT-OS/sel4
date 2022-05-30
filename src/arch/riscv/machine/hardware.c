@@ -232,7 +232,7 @@ void resetTimer(void)
  */
 BOOT_CODE void initTimer(void)
 {
-    sbi_set_timer(riscv_read_time() + RESET_CYCLES);
+    resetTimer();
 }
 #endif /* !CONFIG_KERNEL_MCS */
 
