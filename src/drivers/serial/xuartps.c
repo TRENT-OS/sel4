@@ -37,7 +37,12 @@
 #ifdef CONFIG_PRINTING
 void uart_drv_putchar(unsigned char c)
 {
-    while (!(*UART_REG(UART_CHANNEL_STS) & UART_CHANNEL_STS_TXEMPTY));
+    /* Blocking here is acceptable, as we want debug output to be printed
+     * synchronously, even it this ruins all timing guarantees
+     */
+    while (!(*UART_REG(UART_CHANNEL_STS) & UART_CHANNEL_STS_TXEMPTY)) {
+        /* busy loop */
+    }
     *UART_REG(UART_TX_RX_FIFO) = c;
 }
 #endif /* CONFIG_PRINTING */
@@ -45,7 +50,12 @@ void uart_drv_putchar(unsigned char c)
 #ifdef CONFIG_DEBUG_BUILD
 unsigned char uart_drv_getchar(void)
 {
-    while (*UART_REG(UART_CHANNEL_STS) & UART_CHANNEL_STS_RXEMPTY);
+    /* ToDo: Do not block here, but return EOF. This is supposed to be called
+     *       from an RX interrupt actually
+     */
+    while (*UART_REG(UART_CHANNEL_STS) & UART_CHANNEL_STS_RXEMPTY) {
+        /* busy loop */
+    }
     return *UART_REG(UART_TX_RX_FIFO);
 }
 #endif /* CONFIG_DEBUG_BUILD */
