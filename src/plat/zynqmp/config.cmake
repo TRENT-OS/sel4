@@ -65,7 +65,7 @@ if(KernelPlatformZynqmp)
     endif()
 
     declare_default_headers(
-        TIMER_FREQUENCY 100000000
+        TIMER_FREQUENCY 62500000 #100000000
         MAX_IRQ 187
         NUM_PPI 32
         TIMER drivers/timer/arm_generic.h
