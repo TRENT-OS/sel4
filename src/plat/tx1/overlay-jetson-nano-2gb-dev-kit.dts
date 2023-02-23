@@ -1,0 +1,34 @@
+/*
+ * Copyright 2022, HENSOLDT Cyber GmbH
+ *
+ * SPDX-License-Identifier: GPL-2.0-only
+ */
+
+/ {
+	chosen {
+		seL4,elfloader-devices =
+		    "serial0",
+		    &{/psci};
+
+		seL4,kernel-devices =
+		    "serial0",
+		    &{/interrupt-controller},
+		    &{/timer};
+	};
+
+	/*
+	 * The TegraBoot carveout memory regions start from 0xff03f000, so we
+	 * skip the 0xff000000 to 0xffffffff region. The carveout regions may change
+	 * if the TegraBoot version changes, so keep an eye on the booting process
+	 * if something strange happens.
+	 */
+	memory@80000000 {
+		reg = <0x00000000 0x80000000 0x00000000 0x3f200000 0x00000000 0xc0000000 0x00000000 0x3ee00000>;
+	};
+
+	/* /delete-node/ timer@60005000; */
+
+	timer@60005000 {
+		interrupts = <0x00 0x29 0x04 0x00 0x2a 0x04 0x00 0x79 0x04 0x00 0x98 0x04 0x00 0x99 0x04 0x00 0x9a 0x04 0x00 0x9b 0x04 0x00 0xb0 0x04 0x00 0xb1 0x04 0x00 0xb2 0x04 0x00 0xb3 0x04>;
+	};
+};

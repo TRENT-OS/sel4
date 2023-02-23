@@ -8,7 +8,32 @@ cmake_minimum_required(VERSION 3.7.2)
 
 declare_platform(tx2 KernelPlatformTx2 PLAT_TX2 KernelSel4ArchAarch64)
 
+# disable platform specific settings by default in cache, will be enabled below
+# if active
+foreach(
+    var
+    IN
+    ITEMS
+    KernelPlatformJetsonTX2ASG001
+    KernelPlatformJetsonTX2NXA206
+)
+    unset(${var} CACHE)
+    set(${var} OFF)
+endforeach()
+
 if(KernelPlatformTx2)
+
+    check_platform_and_fallback_to_default(KernelARMPlatform "jetson-tx2-asg001")
+
+    if(KernelARMPlatform STREQUAL "jetson-tx2-asg001")
+        config_set(KernelPlatformJetsonTX2ASG001 PLAT_JETSON_TX2_ASG001 ON)
+    elseif(KernelARMPlatform STREQUAL "jetson-tx2-nx-a206")
+        config_set(KernelPlatformJetsonTX2NXA206 PLAT_JETSON_TX2_NX_A206 ON)
+    else()
+        message(FATAL_ERROR "Which TX2 platform not specified")
+    endif()
+
+    config_set(KernelARMPlatform ARM_PLAT ${KernelARMPlatform})
     declare_seL4_arch(aarch64)
     # Note: If we enable the Denver 2 cores, which are 40-bit PA,
     # the 44-bit PA for Cortex-A57 cores would need to be downgraded to 40bit.
@@ -16,13 +41,12 @@ if(KernelPlatformTx2)
     set(KernelArchArmV8a ON)
     set(KernelArmSMMU ON)
     set(KernelAArch64SErrorIgnore ON)
-    config_set(KernelARMPlatform ARM_PLAT tx2)
-    config_set(KernelArmMach MACH "nvidia")
-    list(APPEND KernelDTSList "tools/dts/tx2.dts")
-    list(APPEND KernelDTSList "src/plat/tx2/overlay-tx2.dts")
+    set(KernelArmMach "nvidia" CACHE INTERNAL "")
+    list(APPEND KernelDTSList "tools/dts/${KernelARMPlatform}.dts")
+    list(APPEND KernelDTSList "src/plat/tx2/overlay-${KernelARMPlatform}.dts")
     declare_default_headers(
         TIMER_FREQUENCY 31250000
-        MAX_IRQ 383
+        MAX_IRQ 383 # according to Parker TRM should be about 280 ???
         INTERRUPT_CONTROLLER arch/machine/gic_v2.h
         NUM_PPI 32
         TIMER drivers/timer/arm_generic.h

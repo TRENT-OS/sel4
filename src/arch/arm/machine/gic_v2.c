@@ -190,7 +190,7 @@ BOOT_CODE void cpu_initLocalIRQController(void)
 */
 void ipi_send_target(irq_t irq, word_t cpuTargetList)
 {
-    if (config_set(CONFIG_PLAT_TX2)) {
+    if (config_set(CONFIG_PLAT_TX2) || config_set(CONFIG_PLAT_XAVIER)) {
         /* We need to swap the top 4 bits and the bottom 4 bits of the
          * cpuTargetList since the A57 cores with logical core ID 0-3 are
          * in cluster 1 and the Denver2 cores with logical core ID 4-5 are
