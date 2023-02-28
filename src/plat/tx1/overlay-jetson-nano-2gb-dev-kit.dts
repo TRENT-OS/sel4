@@ -17,13 +17,18 @@
 	};
 
 	/*
-	 * The TegraBoot carveout memory regions start from 0xff03f000, so we
-	 * skip the 0xff000000 to 0xffffffff region. The carveout regions may change
-	 * if the TegraBoot version changes, so keep an eye on the booting process
-	 * if something strange happens.
+	 * In L4T 32.6.1, Linux marks the following memory regions as free:
+	 * 	- 0x80000000 - 0xbf800000
+	 *	- 0xbfa00000 - 0xff800000
+	 * 	- 0xffa00000 - 0x100000000
+	 *
+	 * These regions might change depending on the respective L4T version,
+	 * so keep an eye on the booting process if something strange happens.
 	 */
 	memory@80000000 {
-		reg = <0x00000000 0x80000000 0x00000000 0x3f200000 0x00000000 0xc0000000 0x00000000 0x3ee00000>;
+		reg = <0x00000000 0x80000000 0x00000000 0x3f800000>,
+			  <0x00000000 0xbfa00000 0x00000000 0x3fe00000>,
+			  <0x00000000 0xffa00000 0x00000000 0x600000>;
 	};
 
 	/* /delete-node/ timer@60005000; */
