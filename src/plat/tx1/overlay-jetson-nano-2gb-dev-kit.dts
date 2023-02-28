@@ -1,0 +1,39 @@
+/*
+ * Copyright 2022, HENSOLDT Cyber GmbH
+ *
+ * SPDX-License-Identifier: GPL-2.0-only
+ */
+
+/ {
+	chosen {
+		seL4,elfloader-devices =
+		    "serial0",
+		    &{/psci};
+
+		seL4,kernel-devices =
+		    "serial0",
+		    &{/interrupt-controller},
+		    &{/timer};
+	};
+
+	/*
+	 * In L4T 32.6.1, Linux marks the following memory regions as free:
+	 * 	- 0x80000000 - 0xbf800000
+	 *	- 0xbfa00000 - 0xff800000
+	 * 	- 0xffa00000 - 0x100000000
+	 *
+	 * These regions might change depending on the respective L4T version,
+	 * so keep an eye on the booting process if something strange happens.
+	 */
+	memory@80000000 {
+		reg = <0x00000000 0x80000000 0x00000000 0x3f800000>,
+			  <0x00000000 0xbfa00000 0x00000000 0x3fe00000>,
+			  <0x00000000 0xffa00000 0x00000000 0x600000>;
+	};
+
+	/* /delete-node/ timer@60005000; */
+
+	timer@60005000 {
+		interrupts = <0x00 0x29 0x04 0x00 0x2a 0x04 0x00 0x79 0x04 0x00 0x98 0x04 0x00 0x99 0x04 0x00 0x9a 0x04 0x00 0x9b 0x04 0x00 0xb0 0x04 0x00 0xb1 0x04 0x00 0xb2 0x04 0x00 0xb3 0x04>;
+	};
+};
