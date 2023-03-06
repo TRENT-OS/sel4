@@ -1,0 +1,32 @@
+/*
+ * Copyright 2022, HENSOLDT Cyber GmbH
+ *
+ * SPDX-License-Identifier: GPL-2.0-only
+ */
+
+/ {
+	chosen {
+		seL4,elfloader-devices =
+		    "serial2",
+		    &{/psci};
+		seL4,kernel-devices =
+		    "serial2",
+		    &{/interrupt-controller@3881000},
+		    &{/iommu@12000000},
+		    &{/timer};
+	};
+
+	memory@80000000 {
+		/*
+		 * These values are passed to Linux by earlier boot stages, and
+		 * aren't included in the DTS.
+		 */
+		reg = <0x00 0x95000000 0x00 0x10000000>; /* usually 0x20000000 */
+			/*  <0x00 0xac200000 0x00 0x44800000>; */
+			/* currently, the additional 6 GiB region below leads to a freeze
+			 * of the capdl loader and is therefore temporarily deactivated
+			 *
+             * <0x01 0x00000000 0x01 0x80000000>;
+			 */
+	};
+};

@@ -1,0 +1,73 @@
+/*
+ * Copyright 2022, HENSOLDT Cyber GmbH
+ *
+ * SPDX-License-Identifier: GPL-2.0-only
+ */
+
+/ {
+	/* seL4 on the TX2 boots on the first non-NVIDIA core */
+	chosen {
+		seL4,boot-cpu = <&{/cpus/cpu@2}>;
+		seL4,elfloader-devices =
+		    "serial0",
+		    &{/psci};
+		seL4,kernel-devices =
+		    "serial0",
+		    &{/interrupt-controller@3881000},
+		    &{/iommu@12000000},
+		    &{/timer};
+	};
+
+	/* Virtualisation stuff for the GIC */
+	interrupt-controller@3881000 {
+		reg = <0x00 0x3881000 0x00 0x1000>,
+			<0x00 0x3882000 0x00 0x2000>,
+			<0x00 0x3884000 0x00 0x2000>,
+			<0x00 0x3886000 0x00 0x2000>;
+		interrupts = <0x1 0x9 0x4f04>;
+		interrupt-parent = <&{/interrupt-controller@3881000}>;
+	};
+
+	adsp@2993000 {
+		/* Remove memory regions which expose RAM or are otherwise garbage */
+		reg = <0x00 0x2993000 0x00 0x1000>,
+				<0x00 0x2990000 0x00 0x2000>,
+				/*<0x00 0x00 0x00 0x01>,*/
+				<0x00 0x290c800 0x00 0x01>,
+				<0x00 0x29b0000 0x00 0x90000>;
+				/*<0x00 0x40000000 0x00 0xc0000000>,*/
+				/*<0x00 0x00 0x00 0x01>;*/
+	};
+
+	/*
+	 * In L4T 32.6.1, Linux marks the following memory regions as free:
+	 * 	- 0x80000000 - 0xf0000000
+	 *	- 0xf0200000 - 0x175800000
+	 * 	- 0x175e00000 - 0x176000000
+	 *	- 0x176600000 - 0x176800000
+	 *	- 0x177000000 - 0x177200000
+	 *
+	 * These regions might change depending on the respective L4T version,
+	 * so keep an eye on the booting process if something strange happens.
+	 */
+	memory@80000000 {
+		reg = <0x00000000 0x80000000 0x00000000 0x70000000>,
+			  <0x00000000 0xf0200000 0x00000000 0x85600000>,
+			  <0x00000001 0x75e00000 0x00000000 0x00200000>,	// currently seems to be ignored by seL4 during mapping
+			  <0x00000001 0x76600000 0x00000000 0x00200000>,	// currently seems to be ignored by seL4 during mapping
+			  <0x00000001 0x77000000 0x00000000 0x00200000>;	// currently seems to be ignored by seL4 during mapping
+	};
+
+    guestvm@f1000000 {
+        reg = <0x0 0xf1000000 0x0 0x8000000>;
+        status = "okay";
+    };
+
+    device-untypes@30f0000 {
+        /*
+         * These are missing device untypeds.
+         */
+        reg = <0x00 0x30f0000 0x00 0x10000>,
+              <0x00 0x3100000 0x00 0x10000>;
+    };
+};

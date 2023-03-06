@@ -1,12 +1,12 @@
 #
-# Copyright 2020, Data61, CSIRO (ABN 41 687 119 230)
+# Copyright 2022, HENSOLDT Cyber GmbH
 #
 # SPDX-License-Identifier: GPL-2.0-only
 #
 
 cmake_minimum_required(VERSION 3.7.2)
 
-declare_platform(tx2 KernelPlatformTx2 PLAT_TX2 KernelSel4ArchAarch64)
+declare_platform(xavier KernelPlatformXavier PLAT_XAVIER KernelSel4ArchAarch64)
 
 # disable platform specific settings by default in cache, will be enabled below
 # if active
@@ -14,38 +14,37 @@ foreach(
     var
     IN
     ITEMS
-    KernelPlatformJetsonTX2ASG001
-    KernelPlatformJetsonTX2NXA206
+    KernelPlatformJetsonXavierNXDevKit
+    KernelPlatformAetinaAN110XNX
 )
     unset(${var} CACHE)
     set(${var} OFF)
 endforeach()
 
-if(KernelPlatformTx2)
+if(KernelPlatformXavier)
 
-    check_platform_and_fallback_to_default(KernelARMPlatform "jetson-tx2-asg001")
+    check_platform_and_fallback_to_default(KernelARMPlatform "jetson-xavier-nx-dev-kit")
 
-    if(KernelARMPlatform STREQUAL "jetson-tx2-asg001")
-        config_set(KernelPlatformJetsonTX2ASG001 PLAT_JETSON_TX2_ASG001 ON)
-    elseif(KernelARMPlatform STREQUAL "jetson-tx2-nx-a206")
-        config_set(KernelPlatformJetsonTX2NXA206 PLAT_JETSON_TX2_NX_A206 ON)
+    if(KernelARMPlatform STREQUAL "jetson-xavier-nx-dev-kit")
+        config_set(KernelPlatformJetsonXavierNXDevKit PLAT_JETSON_XAVIER_NX_DEV_KIT ON)
+    elseif(KernelARMPlatform STREQUAL "aetina-an110-xnx")
+        config_set(KernelPlatformAetinaAN110XNX PLAT_AETINA_AN110_XNX ON)
     else()
-        message(FATAL_ERROR "Which TX2 platform not specified")
+        message(FATAL_ERROR "Which Xavier platform not specified")
     endif()
 
     config_set(KernelARMPlatform ARM_PLAT ${KernelARMPlatform})
     declare_seL4_arch(aarch64)
-    # Note: If we enable the Denver 2 cores, which are 40-bit PA,
-    # the 44-bit PA for Cortex-A57 cores would need to be downgraded to 40bit.
-    set(KernelArmCortexA57 ON)
+    set(KernelNvidiaCarmel ON)
     set(KernelArchArmV8a ON)
+    set(KernelArmSMMU OFF)
     set(KernelAArch64SErrorIgnore ON)
     set(KernelArmMach "nvidia" CACHE INTERNAL "")
     list(APPEND KernelDTSList "tools/dts/${KernelARMPlatform}.dts")
-    list(APPEND KernelDTSList "src/plat/tx2/overlay-${KernelARMPlatform}.dts")
+    list(APPEND KernelDTSList "src/plat/xavier/overlay-${KernelARMPlatform}.dts")
     declare_default_headers(
         TIMER_FREQUENCY 31250000
-        MAX_IRQ 383 # according to Parker TRM should be about 280 ???
+        MAX_IRQ 416
         INTERRUPT_CONTROLLER arch/machine/gic_v2.h
         NUM_PPI 32
         TIMER drivers/timer/arm_generic.h
@@ -58,6 +57,6 @@ if(KernelPlatformTx2)
 endif()
 
 add_sources(
-    DEP "KernelPlatformTx2"
+    DEP "KernelPlatformXavier"
     CFILES src/arch/arm/machine/gic_v2.c src/arch/arm/machine/l2c_nop.c
 )
