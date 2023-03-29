@@ -113,6 +113,34 @@ if(KernelPlatformQEMUArmVirt)
                 if(Kernel32)
                     list(APPEND QEMU_MACHINE "highmem=off")
                 endif()
+
+
+
+                # secure=[on|off] Security Extensions (TrustZone). The default is off.
+                # virtualization=[on|off] Virtualization Extensions. The default is off.
+                # mte=[on|off] Arm Memory Tagging Extensions. The default is off.
+                # highmem=[on|off] Devices and RAM in physical address space above 32 bits. The default is on for machine types later than virt-2.12.
+                # compact-highmem=[on|off] Compact layout for high memory regions. The default is on for machine types later than virt-7.2.
+                # highmem-redists=[on|off] High memory region for GICv3 or GICv4 redistributor. The default is on. Setting this to off will limit the maximum number of CPUs when GICv3 or GICv4 is used.
+                # highmem-ecam=[on|off] to High memory region for PCI ECAM. The default is on for machine types later than virt-3.0.
+                # highmem-mmio=[on|off] to High memory region for PCI MMIO. The default is on.
+                # gic-version=[2|3|4|host|max]:
+                #   2: GICv2. Note that this limits the number of CPUs to 8.
+                #   3: GICv3. This allows up to 512 CPUs.
+                #   4: GICv4. Requires virtualization to be on; allows up to 317 CPUs.
+                #   host: Use the same GIC version the host provides, when using KVM
+                #   max: Use the best GIC version possible (same as host when using KVM; with TCG this is currently 3 if virtualization is off and 4 if virtualization is on, but this may change in future)
+                list(APPEND QEMU_MACHINE "gic-version=2")
+                # its=[on|off] ITS instantiation. The default is on for machine types later than virt-2.7.
+                list(APPEND QEMU_MACHINE "its=off")
+                # iommu=[none|smmuv3]: Set the IOMMU type
+                # ras=[on|off] to enable/disable reporting host memory errors to a guest using ACPI and guest external abort exceptions. The default is off.
+                list(APPEND QEMU_MACHINE "iommu=none")
+                # dtb-randomness=[on|off] to pass random seeds via the guest DTB rng-seed and kaslr-seed nodes (in both “/chosen” and “/secure-chosen”) to use for features like the random number generator and address space randomisation. The default is on. You will want to disable it if your trusted boot chain will verify the DTB it is passed, since this option causes the DTB to be non-deterministic. It would be the responsibility of the firmware to come up with a seed and pass it on if it wants to.
+                # dtb-kaslr-seed: A deprecated synonym for dtb-randomness.
+
+
+
                 list(APPEND QEMU_MACHINE "dumpdtb=${QEMU_DTB}")
 
                 # Lists are just strings with ";" as item separator, so we can
