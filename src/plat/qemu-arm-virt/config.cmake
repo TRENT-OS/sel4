@@ -76,7 +76,7 @@ if(KernelPlatformQEMUArmVirt)
             # Use the system's QEMU if no custom QEMU is provided. Have a sanity
             # check about the version to ensure it can be used.
             if(NOT QEMU_BINARY)
-                set(QEMU_BINARY "qemu-system-${QEMU_ARCH}")
+                set(QEMU_BINARY "/opt/hc/bin/qemu-system-${QEMU_ARCH}")
                 find_program(QEMU_BINARY ${QEMU_BINARY})
                 # ARM virtual platform works since QEMU 3.1.0
                 set(MIN_QEMU_VERSION "3.1.0")
