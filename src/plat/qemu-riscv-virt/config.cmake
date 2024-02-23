@@ -37,7 +37,7 @@ if(KernelPlatformQEMURiscVVirt)
             # Use the system's QEMU if no custom QEMU is provided. Have a sanity
             # check about the version to ensure it can be used.
             if(NOT QEMU_BINARY)
-                set(QEMU_BINARY "qemu-system-${KernelSel4Arch}")
+                set(QEMU_BINARY "/opt/hc/bin/qemu-system-${KernelSel4Arch}")
                 find_program(QEMU_BINARY ${QEMU_BINARY})
                 # RISC-V virtual platform works since QEMU v5.1.0
                 set(MIN_QEMU_VERSION "5.1.0")
@@ -130,6 +130,14 @@ if(KernelPlatformQEMURiscVVirt)
                 "-nographic"
                 "-bios"
                 "none"
+                "-serial"
+                "null"
+                "-serial"
+                "null"
+                "-serial"
+                "null"
+                "-serial"
+                "null"
             )
             # When dumping the DTB to a file, QEMU prints a status message to
             # stderr. Capture it and print on stdout to avoid polluting stderr
